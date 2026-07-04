@@ -1,0 +1,12 @@
+.venv/
+.env
+__pycache__/
+*.pyc
+
+data/videos/*
+data/frames/*
+data/audio/*
+
+outputs/*
+.DS_Store
+
