@@ -1,42 +1,97 @@
-import os
+import json
+from secrets import choice
+import time
 
-from dotenv import load_dotenv
-from google import genai
-from google.genai import types
+from json_repair import repair_json
+
+from openai import APIStatusError
+
+from src.ai.fireworks.client import (
+    MODEL_ID,
+    get_fireworks_client,
+)
 
 from src.models.video_context import (
     VideoContext,
 )
 
 
-load_dotenv()
+MAX_OUTPUT_TOKENS = 3000
 
 
-MODEL_ID = "gemini-2.5-flash"
+def extract_json(
+    raw_text: str,
+) -> dict:
+    text = raw_text.strip()
 
+    if text.startswith("```"):
+        lines = text.splitlines()
 
-_client = None
+        if lines:
+            lines = lines[1:]
 
+        if (
+            lines
+            and lines[-1].strip() == "```"
+        ):
+            lines = lines[:-1]
 
-def get_gemini_client() -> genai.Client:
-    global _client
+        text = "\n".join(lines).strip()
 
-    if _client is None:
-        api_key = os.getenv(
-            "GEMINI_API_KEY"
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if (
+        start == -1
+        or end == -1
+        or end < start
+    ):
+        raise ValueError(
+            "Kimi returned no JSON object.\n\n"
+            f"RAW OUTPUT:\n{raw_text}"
         )
 
-        if not api_key:
+    json_text = text[start:end + 1]
+
+    try:
+        return json.loads(
+            json_text
+        )
+
+    except json.JSONDecodeError as error:
+        print(
+            "\nKimi returned malformed JSON."
+        )
+
+        print(
+            "Attempting local JSON repair..."
+        )
+
+        print(
+            "Original JSON error: "
+            f"{error}"
+        )
+
+        repaired = repair_json(
+            json_text,
+            return_objects=True,
+        )
+
+        if not isinstance(
+            repaired,
+            dict,
+        ):
             raise ValueError(
-                "GEMINI_API_KEY is not set."
+                "JSON repair did not produce "
+                "a JSON object.\n\n"
+                f"RAW OUTPUT:\n{raw_text}"
             )
 
-        _client = genai.Client(
-            api_key=api_key
+        print(
+            "Local JSON repair successful."
         )
 
-    return _client
-
+        return repaired
 
 def format_transcript(
     transcription: dict,
@@ -46,8 +101,7 @@ def format_transcript(
     for segment in transcription["segments"]:
         lines.append(
             (
-                f"[{segment['start']:.2f}s"
-                f" - "
+                f"[{segment['start']:.2f}s - "
                 f"{segment['end']:.2f}s] "
                 f"{segment['text']}"
             )
@@ -81,10 +135,10 @@ VISUAL DESCRIPTION:
 SUBJECTS:
 {visual.subjects}
 
-ACTIONS OR VISIBLE CHANGES:
+ACTIONS:
 {visual.actions}
 
-IMPORTANT OBJECTS:
+OBJECTS:
 {visual.objects}
 
 VISIBLE TEXT:
@@ -99,119 +153,86 @@ VISUAL MOOD:
 
         sections.append(section)
 
-    return "\n\n---\n\n".join(sections)
+    return "\n\n---\n\n".join(
+        sections
+    )
 
 
-def build_context_prompt(
+def build_video_context(
     transcription: dict,
     visual_timeline: list[dict],
-) -> str:
+) -> tuple[
+    VideoContext,
+    dict,
+]:
+    client = get_fireworks_client()
+
     transcript = format_transcript(
         transcription
     )
 
-    timeline = format_visual_timeline(
-        visual_timeline
+    visual_timeline_text = (
+        format_visual_timeline(
+            visual_timeline
+        )
     )
 
-    return f"""
-You are a multimodal video understanding system.
+    prompt = f"""
+You are the semantic fusion layer of ClipContext.
 
-Your task is to build one canonical semantic
-representation of a short-form video.
+ClipContext analyses short-form creator videos.
 
-You are given:
+You receive:
 
 1. A timestamped speech transcript.
-2. A timestamped visual observation timeline.
+2. Timestamped visual observations.
 
-The transcript and visual timeline were produced
-independently.
+Build one canonical semantic representation of the video.
 
-You must fuse them carefully.
+You are NOT writing a caption yet.
 
-IMPORTANT EVIDENCE RULES:
+EVIDENCE RULES:
 
-- Spoken claims are evidence of what is said.
+- Speech is evidence of what is said.
 - Visual observations are evidence of what is shown.
-- Do not treat visual mood as proof of creator intent.
-- Do not identify people unless identity is explicitly
-  established by the supplied evidence.
-- Do not invent causal relationships between scenes.
-- Do not claim an action happened if the visual evidence
-  only suggests it.
-- If an interpretation is plausible but not established,
-  place it in uncertainties.
-- Preserve exact important on-screen text.
+- Use timestamps to align speech and visuals.
+- Do not identify people unless identity is established.
+- Do not invent causal relationships.
+- Do not convert visual symbolism into literal fact.
+- Do not claim an outcome occurred unless shown or stated.
+- Preserve important readable on-screen text exactly.
+- Put plausible but unestablished interpretations in
+  uncertainties.
 - Prefer concrete details over generic abstractions.
 
-TEMPORAL REASONING:
+CAPTIONABLE DETAILS:
 
-Use timestamps to understand what visual material appears
-while particular speech is occurring.
+These are specific evidence-grounded details a downstream
+caption writer can use.
 
-STRICT SPEECH is temporally central to a window.
+Good:
+"The speech says a dream remains possible while the visuals
+move from distressed indoor scenes to an open mountain
+landscape."
 
-CONTEXT SPEECH may overlap the window boundary and is
-provided only for continuity.
+Bad:
+"The video is inspirational."
 
-CONTENT TYPE:
+Good:
+"On-screen text reads 'this is my ultimate dream' followed
+by 'I believe it's yours too'."
 
-Choose a concise category such as:
-- motivational edit
-- tutorial
-- commentary
-- comedy
-- vlog
-- product demonstration
-- educational explainer
-- gaming clip
-- interview
-- promotional content
+Bad:
+"The video contains motivational text."
 
 TECHNICAL LEVEL:
 
 Use exactly one of:
+
 - non-technical
 - beginner
 - intermediate
 - advanced
-
-CAPTIONABLE DETAILS:
-
-Extract highly specific details that a strong caption writer
-could reference.
-
-Good captionable detail:
-"The speech says a dream remains possible while the visuals
-shift from distressed indoor scenes to an open mountain
-landscape."
-
-Bad captionable detail:
-"The video is inspiring."
-
-Good captionable detail:
-"On-screen text reads 'this is my ultimate dream' followed
-by 'I believe it's yours too'."
-
-Bad captionable detail:
-"There is text on screen."
-
-KEY MOMENTS:
-
-Include only moments that materially contribute to the
-video's meaning, narrative, humour, demonstration, or
-emotional progression.
-
-For significance, explain why the combination of speech
-and visuals matters.
-
-TARGET AUDIENCE SIGNALS:
-
-Infer only audience signals supported by content,
-terminology, visual style, or presentation.
-
-Do not invent demographic attributes.
 
 TRANSCRIPT:
 
@@ -219,38 +240,120 @@ TRANSCRIPT:
 
 VISUAL TIMELINE:
 
-{timeline}
+{visual_timeline_text}
 
-Build the canonical VideoContext now.
+Return JSON only.
+
+Return exactly this structure:
+
+{{
+  "topic": "concise primary topic",
+  "content_type": "concise content category",
+  "core_message": "central message supported by evidence",
+  "transcript_summary": "summary of spoken content",
+  "visual_summary": "summary of visual content",
+  "multimodal_summary": "how speech and visuals work together",
+  "key_moments": [
+    {{
+      "start_time": 0.0,
+      "end_time": 5.0,
+      "spoken_content": "relevant speech or empty string",
+      "visual_content": "specific visual evidence",
+      "significance": "why this moment matters"
+    }}
+  ],
+  "key_entities": [
+    "important evidenced subject or concept"
+  ],
+  "visible_text": [
+    "exact important readable text"
+  ],
+  "emotional_arc": "evidence-based emotional progression",
+  "visual_style": "specific visual presentation style",
+  "technical_level": "non-technical",
+  "target_audience_signals": [
+    "content-supported audience signal"
+  ],
+  "captionable_details": [
+    "specific evidence-grounded detail"
+  ],
+  "uncertainties": [
+    "plausible interpretation not established"
+  ]
+}}
 """.strip()
 
+    start = time.perf_counter()
 
-def build_video_context(
-    transcription: dict,
-    visual_timeline: list[dict],
-) -> VideoContext:
-    client = get_gemini_client()
-
-    prompt = build_context_prompt(
-        transcription=transcription,
-        visual_timeline=visual_timeline,
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_ID,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+        temperature=0.0,
+        max_tokens=MAX_OUTPUT_TOKENS,
+        reasoning_effort="none",
     )
 
-    response = client.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            response_mime_type=(
-                "application/json"
-            ),
-            response_schema=VideoContext,
+    except APIStatusError as error:
+        print(
+            "\nFIREWORKS CONTEXT REQUEST FAILED"
+        )
+
+        print(
+            f"Status: {error.status_code}"
+        )
+
+        print(
+            "Request ID: "
+            f"{getattr(error, 'request_id', None)}"
+        )
+
+        raise
+
+    latency = (
+        time.perf_counter() - start
+    )
+
+    choice = response.choices[0]
+
+    raw_output = (
+    choice.message.content
+    or ""
+)
+
+    if choice.finish_reason == "length":
+        raise RuntimeError(
+        "Kimi context output was truncated "
+        "because max_tokens was reached. "
+        f"Current limit: {MAX_OUTPUT_TOKENS}. "
+        "Increase MAX_OUTPUT_TOKENS."
+    )
+
+    parsed = extract_json(
+        raw_output
+    )
+
+    context = VideoContext.model_validate(
+        parsed
+    )
+
+    usage = {
+        "prompt_tokens": (
+            response.usage.prompt_tokens
+            if response.usage
+            else 0
         ),
-    )
+        "completion_tokens": (
+            response.usage.completion_tokens
+            if response.usage
+            else 0
+        ),
+        "latency_seconds": latency,
+    }
 
-    if response.parsed is not None:
-        return response.parsed
-
-    return VideoContext.model_validate_json(
-        response.text
-    )
+    return context, usage
