@@ -3,7 +3,7 @@ import cv2
 from pathlib import Path
 
 
-MAX_FRAME_WIDTH = 768
+MAX_FRAME_WIDTH = 512
 
 
 def resize_frame(frame):

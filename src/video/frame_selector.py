@@ -124,10 +124,7 @@ def select_window_frames(
                 * DIVERSITY_WEIGHT
             )
 
-            if (
-                combined_score
-                > best_combined_score
-            ):
+            if combined_score > best_combined_score:
                 best_combined_score = (
                     combined_score
                 )
