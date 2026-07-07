@@ -6,3 +6,5 @@ ffmpeg-python
 pillow
 faster-whisper
 google-genai
+google-api-python-client
+pandas
