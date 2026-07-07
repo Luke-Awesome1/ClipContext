@@ -17,19 +17,78 @@ def resize_frame(frame):
     new_width = int(width * scale)
     new_height = int(height * scale)
 
-    resized = cv2.resize(
+    return cv2.resize(
         frame,
         (new_width, new_height),
         interpolation=cv2.INTER_AREA,
     )
 
-    return resized
+
+def calculate_frame_score(frame) -> float:
+    gray = cv2.cvtColor(
+        frame,
+        cv2.COLOR_BGR2GRAY,
+    )
+
+    mean_brightness = gray.mean()
+
+    brightness_score = min(
+        mean_brightness / 80.0,
+        1.0,
+    )
+
+    edges = cv2.Canny(
+        gray,
+        100,
+        200,
+    )
+
+    edge_density = (
+        edges > 0
+    ).mean()
+
+    edge_score = min(
+        edge_density / 0.10,
+        1.0,
+    )
+
+    contrast = gray.std()
+
+    contrast_score = min(
+        contrast / 64.0,
+        1.0,
+    )
+
+    score = (
+        brightness_score * 0.30
+        + edge_score * 0.35
+        + contrast_score * 0.35
+    )
+
+    return float(score)
 
 
-def extract_frames(
+def read_frame_at_timestamp(
+    video,
+    timestamp: float,
+):
+    video.set(
+        cv2.CAP_PROP_POS_MSEC,
+        timestamp * 1000,
+    )
+
+    success, frame = video.read()
+
+    if not success:
+        return None
+
+    return frame
+
+
+def extract_candidate_frames(
     video_path: str,
     output_dir: str,
-    interval_seconds: int = 5,
+    scan_interval: float = 1.0,
 ) -> list[dict]:
     output = Path(output_dir)
 
@@ -45,7 +104,9 @@ def extract_frames(
             f"Could not open video: {video_path}"
         )
 
-    fps = video.get(cv2.CAP_PROP_FPS)
+    fps = video.get(
+        cv2.CAP_PROP_FPS
+    )
 
     total_frames = video.get(
         cv2.CAP_PROP_FRAME_COUNT
@@ -53,26 +114,27 @@ def extract_frames(
 
     duration = total_frames / fps
 
-    extracted_frames = []
+    candidates = []
 
     timestamp = 0.0
     frame_number = 0
 
     while timestamp < duration:
-        video.set(
-            cv2.CAP_PROP_POS_MSEC,
-            timestamp * 1000,
+        frame = read_frame_at_timestamp(
+            video,
+            timestamp,
         )
 
-        success, frame = video.read()
-
-        if not success:
-            break
+        if frame is None:
+            timestamp += scan_interval
+            continue
 
         frame = resize_frame(frame)
 
+        score = calculate_frame_score(frame)
+
         filename = (
-            f"frame_{frame_number:03d}_"
+            f"candidate_{frame_number:03d}_"
             f"{timestamp:.1f}s.jpg"
         )
 
@@ -87,17 +149,20 @@ def extract_frames(
             ],
         )
 
-        extracted_frames.append(
+        candidates.append(
             {
-                "frame_number": frame_number,
-                "timestamp": round(timestamp, 2),
+                "timestamp": round(
+                    timestamp,
+                    2,
+                ),
                 "path": str(frame_path),
+                "score": round(score, 4),
             }
         )
 
-        timestamp += interval_seconds
+        timestamp += scan_interval
         frame_number += 1
 
     video.release()
 
-    return extracted_frames
+    return candidates

@@ -1,59 +1,118 @@
+from src.video.frame_selector import (
+    select_window_frames,
+)
+
+
+WINDOW_SIZE = 5.0
+
+
 def get_overlapping_segments(
     start_time: float,
     end_time: float,
     transcript_segments: list[dict],
 ) -> list[dict]:
-    overlapping = []
+    return [
+        segment
+        for segment in transcript_segments
+        if (
+            segment["start"] < end_time
+            and segment["end"] > start_time
+        )
+    ]
+
+
+def get_strict_segments(
+    start_time: float,
+    end_time: float,
+    transcript_segments: list[dict],
+) -> list[dict]:
+    strict = []
 
     for segment in transcript_segments:
-        segment_start = segment["start"]
-        segment_end = segment["end"]
+        midpoint = (
+            segment["start"]
+            + segment["end"]
+        ) / 2
 
-        overlaps = (
-            segment_start < end_time
-            and segment_end > start_time
-        )
+        if (
+            midpoint >= start_time
+            and midpoint < end_time
+        ):
+            strict.append(segment)
 
-        if overlaps:
-            overlapping.append(segment)
-
-    return overlapping
+    return strict
 
 
 def build_temporal_windows(
-    frames: list[dict],
+    candidates: list[dict],
     transcript_segments: list[dict],
     video_duration: float,
 ) -> list[dict]:
     windows = []
 
-    for index, frame in enumerate(frames):
-        start_time = frame["timestamp"]
+    start_time = 0.0
 
-        if index + 1 < len(frames):
-            end_time = frames[index + 1]["timestamp"]
-        else:
-            end_time = video_duration
-
-        segments = get_overlapping_segments(
-            start_time=start_time,
-            end_time=end_time,
-            transcript_segments=transcript_segments,
+    while start_time < video_duration:
+        end_time = min(
+            start_time + WINDOW_SIZE,
+            video_duration,
         )
 
-        spoken_text = " ".join(
+        selected_frames = select_window_frames(
+            candidates=candidates,
+            start_time=start_time,
+            end_time=end_time,
+            max_frames=3,
+        )
+
+        overlapping_segments = (
+            get_overlapping_segments(
+                start_time=start_time,
+                end_time=end_time,
+                transcript_segments=(
+                    transcript_segments
+                ),
+            )
+        )
+
+        strict_segments = get_strict_segments(
+            start_time=start_time,
+            end_time=end_time,
+            transcript_segments=(
+                transcript_segments
+            ),
+        )
+
+        context_spoken_text = " ".join(
             segment["text"]
-            for segment in segments
+            for segment in overlapping_segments
+        )
+
+        strict_spoken_text = " ".join(
+            segment["text"]
+            for segment in strict_segments
         )
 
         windows.append(
             {
-                "start_time": round(start_time, 2),
-                "end_time": round(end_time, 2),
-                "frame_path": frame["path"],
-                "spoken_text": spoken_text,
-                "transcript_segments": segments,
+                "start_time": round(
+                    start_time,
+                    2,
+                ),
+                "end_time": round(
+                    end_time,
+                    2,
+                ),
+                "frames": selected_frames,
+                "strict_spoken_text": (
+                    strict_spoken_text
+                ),
+                "context_spoken_text": (
+                    context_spoken_text
+                ),
             }
         )
+
+        start_time = end_time
 
     return windows

@@ -5,6 +5,4 @@ opencv-python
 ffmpeg-python
 pillow
 faster-whisper
-mlx-vlm
-
-
+google-genai
