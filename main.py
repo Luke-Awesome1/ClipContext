@@ -1,4 +1,6 @@
 import hashlib
+from multiprocessing import context
+from multiprocessing import context
 import os
 
 from src.video.validator import (
@@ -99,6 +101,7 @@ def build_video_paths(
         frame_dir,
         exist_ok=True,
     )
+    
 
     return {
         "audio": os.path.join(
@@ -117,6 +120,10 @@ def build_video_paths(
         "video_context": os.path.join(
             video_output_dir,
             "video_context.json",
+        ),
+        "caption_context": os.path.join(
+            video_output_dir,
+            "caption_context.json",
         ),
     }
 
@@ -426,7 +433,25 @@ def estimate_cost(
     )
 
     return input_cost + output_cost
+def save_caption_context(
+    context: VideoContext,
+    output_path: str,
+) -> dict:
+    caption_context = {
+        "topic": context.topic,
+        "content_type": context.content_type,
+        "multimodal_summary": (
+            context.multimodal_summary
+        ),
+        "core_message": context.core_message,
+    }
 
+    save_json(
+        caption_context,
+        output_path,
+    )
+
+    return caption_context
 
 def main():
     print(
@@ -559,6 +584,24 @@ def main():
         cache_path=(
             paths["video_context"]
         ),
+    )
+    print(
+    "\n8. Extracting caption context..."
+    )
+
+    caption_context = save_caption_context(
+        context=context,
+        output_path=(
+        paths["caption_context"]
+    ),
+    )   
+
+    print(
+        "Caption context saved to:"
+    )
+
+    print(
+        paths["caption_context"]
     )
 
     total_prompt_tokens = (
