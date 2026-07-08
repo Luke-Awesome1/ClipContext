@@ -11,7 +11,7 @@ export default function StudioNavbar() {
           href="/"
           className="rounded-full px-2 py-1 text-lg font-semibold tracking-tight text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
         >
-          Lumina{" "}
+          ClipContext{" "}
           <span className="bg-gradient-to-r from-sky-300 to-blue-500 bg-clip-text text-transparent">
             AI
           </span>

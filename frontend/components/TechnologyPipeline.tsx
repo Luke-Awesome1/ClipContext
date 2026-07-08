@@ -100,7 +100,7 @@ export default function TechnologyPipeline() {
               A creator-first flow from upload to publish.
             </h2>
             <p className="mt-4 text-base leading-7 text-neutral-400 sm:text-lg">
-              Lumina learns the creator, interprets the video, and turns that into publishing assets that feel personal and discoverable.
+              ClipContext learns the creator, interprets the video, and turns that into publishing assets that feel personal and discoverable.
             </p>
           </SectionReveal>
 
@@ -181,7 +181,7 @@ export default function TechnologyPipeline() {
               Technology
             </p>
             <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              Why Lumina produces better outputs.
+              Why ClipContext produces better outputs.
             </h2>
             <p className="mt-4 text-base leading-7 text-neutral-400 sm:text-lg">
               It connects creator identity, video context and trend signals so the output feels specific rather than generic.

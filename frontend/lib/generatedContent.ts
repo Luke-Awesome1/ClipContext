@@ -16,7 +16,7 @@ const outputs: Record<CaptionStyle, VideoAnalysis["outputs"][CaptionStyle]> = {
     caption:
       "In this walkthrough, the founder breaks down how early-stage teams can align onboarding, activation, and expansion into one measurable growth loop — with live dashboard examples from their Q1 rollout.",
     summary:
-      "A structured founder-led explainer covering product-led growth mechanics. Lumina detected spoken frameworks, on-screen analytics, and emphasis on retention metrics to produce a publication-ready formal caption suited for LinkedIn or YouTube descriptions.",
+      "A structured founder-led explainer covering product-led growth mechanics. ClipContext detected spoken frameworks, on-screen analytics, and emphasis on retention metrics to produce a publication-ready formal caption suited for LinkedIn or YouTube descriptions.",
     hashtags: [
       "#ProductLedGrowth",
       "#StartupStrategy",
@@ -67,7 +67,7 @@ const outputs: Record<CaptionStyle, VideoAnalysis["outputs"][CaptionStyle]> = {
     caption:
       "So I'm watching this founder explain product-led growth and honestly? It's like making coffee. Grind the onboarding, brew the activation, and pray the expansion doesn't spill everywhere. Three frameworks. One dashboard. Zero regrets.",
     summary:
-      "Classic, approachable humor without meme slang. Lumina matched the instructional tone and visual dashboard segments to a caption that works for Facebook, email newsletters, or audiences outside trend-heavy platforms.",
+      "Classic, approachable humor without meme slang. ClipContext matched the instructional tone and visual dashboard segments to a caption that works for Facebook, email newsletters, or audiences outside trend-heavy platforms.",
     hashtags: [
       "#StartupHumor",
       "#ProductLedGrowth",

@@ -99,7 +99,7 @@ export default function UploadSection() {
             Upload your video
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-base text-neutral-400">
-            Drop a clip between 30 seconds and 2 minutes. Lumina handles the
+            Drop a clip between 30 seconds and 2 minutes. ClipContext handles the
             rest.
           </p>
         </SectionReveal>
@@ -230,7 +230,7 @@ export default function UploadSection() {
                 onClick={startProcessing}
                 className="mx-auto flex items-center gap-2 rounded-full bg-blue-500 px-8 py-3.5 text-sm font-semibold text-white shadow-[0_0_32px_rgba(91,140,255,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_0_42px_rgba(91,140,255,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
               >
-                Analyze with Lumina
+                Analyze with ClipContext
                 <ArrowRight size={16} />
               </motion.button>
 
@@ -316,7 +316,7 @@ export default function UploadSection() {
                               exit={{ opacity: 0, y: -4 }}
                               className="mt-3 text-sm leading-6 text-neutral-400"
                             >
-                              Allow Lumina AI to analyze your previous 50 YouTube uploads to understand your writing style, tone, structure and publishing patterns. This helps generate titles, descriptions and hashtags that feel more authentic to your content.
+                              Allow ClipContext to analyze your previous 50 YouTube uploads to understand your writing style, tone, structure and publishing patterns. This helps generate titles, descriptions and hashtags that feel more authentic to your content.
                             </motion.p>
                           )}
                         </AnimatePresence>
@@ -334,7 +334,7 @@ export default function UploadSection() {
                               Analyze my previous uploads to personalize results
                             </span>
                             <span className="mt-1 block text-sm leading-6 text-neutral-400">
-                              This is completely optional. If left empty, Lumina AI will still generate results using only your uploaded video and current niche trends.
+                              This is completely optional. If left empty, ClipContext will still generate results using only your uploaded video and current niche trends.
                             </span>
                           </span>
                         </label>
