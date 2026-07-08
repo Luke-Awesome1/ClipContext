@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Brain, Layers, Palette, ScanEye } from "lucide-react";
+import { Brain, Layers, Palette, Sparkles } from "lucide-react";
 import SectionReveal from "@/components/ui/SectionReveal";
 
 const features = [
@@ -24,7 +24,7 @@ const features = [
       "Formal, Sarcastic, Humor-T, and Humor-NT — each tuned for a different audience and platform.",
   },
   {
-    icon: ScanEye,
+    icon: Sparkles,
     title: "Context Aware Generation",
     description:
       "Titles and captions adapt to pacing, tone, and visual cues so every output feels native to your video.",
