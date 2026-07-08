@@ -11,8 +11,7 @@ from src.ai.fireworks.client import get_fireworks_client, MINMAX_ID, MODEL_ID
 # =====================================================================
 # ⚙️ CONFIGURATION & CLIENT INITIALIZATION
 # =====================================================================
-#GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyA2NddDnD5ZBsOGxtkV0OopbSNfbeDLoYg")
-#gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+
 
 client = get_fireworks_client()
 
