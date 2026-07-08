@@ -62,7 +62,7 @@ PROJECT_ROOT = Path(
     __file__
 ).resolve().parent
 
-str(video_path) = (
+VIDEO_PATH = (
     PROJECT_ROOT
     / "data"
     / "videos"
