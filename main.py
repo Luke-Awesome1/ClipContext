@@ -7,13 +7,11 @@ import argparse
 from src.config import (
     validate_environment,
 )
-from src.trends.worldwide_analyzer import (
-    run_worldwide_analysis,
-)
+from src.trends.worldwide_analyzer import
 
-from src.trends.trend_analyzer import (
-    run_creator_analysis,
-)
+
+from src.trends.trend_analyzer import run_worldwide_analysis
+
 
 from src.models.discriminator.discriminator import (
     run_discriminator,
@@ -62,7 +60,7 @@ PROJECT_ROOT = Path(
     __file__
 ).resolve().parent
 
-str(video_path) = (
+VIDEO_PATH = (
     PROJECT_ROOT
     / "data"
     / "videos"
