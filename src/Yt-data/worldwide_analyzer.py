@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 # ⚙️ CONFIGURATION & CLIENT INITIALIZATION
 # =====================================================================
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "AIzaSyCcCZZlkkolUiIokUJ0k_bVhwpCRESMYOA")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AQ.Ab8RN6KgMYtGDUewqeobDIKl4KfIWa1iDX0Q4InZOmnPQoFAFw")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyA2NddDnD5ZBsOGxtkV0OopbSNfbeDLoYg")
 
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
@@ -182,7 +182,7 @@ def compile_syntax_payload(clustered_df: pd.DataFrame, file_prefix: str):
         )
     )
 
-    syntax_filename = f"syntax_worldwide_{file_prefix}.json"
+    syntax_filename = f"syntax/w_syntax.json"
     with open(syntax_filename, "w", encoding="utf-8") as f:
         f.write(response.text)
     print(f"🧬 Strategy Syntax File Created (3 Keys Split) -> {syntax_filename}")
@@ -201,7 +201,7 @@ if __name__ == "__main__":
         processed_matrix = categorize_trends(raw_video_matches)
         safe_slug = search_query_term.replace(' ', '_').lower()
 
-        trends_filename = f"worldwide_trends_{safe_slug}.json"
+        trends_filename = f"trends/w_trends.json"
         processed_matrix.to_json(trends_filename, orient="records", indent=4)
         print(f"📊 Historical Trends Telemetry File Created -> {trends_filename}")
 
