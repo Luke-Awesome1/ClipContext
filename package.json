@@ -1,0 +1,16 @@
+{
+  "name": "act2-captioner",
+  "version": "1.0.0",
+  "description": "AI-powered video captioning and analysis tool",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm run start",
+    "lint": "cd frontend && npm run lint",
+    "backend": ".venv/bin/python main.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
