@@ -8,12 +8,18 @@ from google import genai
 from google.genai import types
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+from dotenv import load_dotenv
 
 # =====================================================================
 # ⚙️ CONFIGURATION & CLIENT INITIALIZATION
 # =====================================================================
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "AIzaSyCcCZZlkkolUiIokUJ0k_bVhwpCRESMYOA")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyA2NddDnD5ZBsOGxtkV0OopbSNfbeDLoYg")
+
+load_dotenv()
+# =====================================================================
+# ⚙️ CONFIGURATION & CLIENT INITIALIZATION
+# =====================================================================
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
