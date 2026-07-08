@@ -2,7 +2,14 @@
 .env
 __pycache__/
 *.pyc
+# Ignore all .json files
 *.json
+
+# Exception: Do not ignore package.json
+!frontend/package.json
+!frontend/package-lock.json
+!package.json
+!frontend/tsconfig.json
 
 data/videos/*
 data/frames/*
