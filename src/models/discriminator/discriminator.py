@@ -4,17 +4,22 @@ import re
 import pandas as pd
 from google import genai
 from google.genai import types
+from src.ai.fireworks.client import get_fireworks_client, MINMAX_ID, MODEL_ID
+
+
 
 # =====================================================================
 # ⚙️ CONFIGURATION & CLIENT INITIALIZATION
 # =====================================================================
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyA2NddDnD5ZBsOGxtkV0OopbSNfbeDLoYg")
-gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+#GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyA2NddDnD5ZBsOGxtkV0OopbSNfbeDLoYg")
+#gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+
+client = get_fireworks_client()
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Navigate up to 'src/' and then down into 'Yt-data/'
-YT_DATA_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", "Yt-data"))
+YT_DATA_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", "..", "Yt-data",))
 
 
 def load_system_instruction(prompt_name: str) -> str:
@@ -31,7 +36,7 @@ def load_validation_payloads(trends_filename: str, context_filename: str = "vide
 
     # Dynamically build absolute paths to the Yt-data folder
     context_json_path = os.path.join(YT_DATA_DIR, context_filename)
-    trends_json_path = os.path.join(YT_DATA_DIR, trends_filename)
+    trends_json_path = os.path.join(YT_DATA_DIR, "trends", trends_filename)
 
     try:
         with open(context_json_path, "r", encoding="utf-8") as f:
@@ -121,18 +126,40 @@ def run_discriminator_audit(candidates_list: list, context_data: dict, benchmark
 
     system_instruction = load_system_instruction("d_prompt")
 
-    response = gemini_client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=f"Execute comprehensive evaluation loop for target payload:\n\n{json.dumps(evaluation_package, indent=2)}",
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=0.1,
-            response_mime_type="application/json"
-        )
+    # Inside src/models/discriminator/discriminator.py
+    response = client.chat.completions.create(
+        model=MINMAX_ID,  # accounts/fireworks/models/minimax-m3 or m2.7
+        messages=[
+            # 1. Put the instructions from d_prompt.txt here
+            {
+                "role": "system",
+                "content": system_instruction
+            },
+            # 2. Put the actual data payload here for the model to analyze
+            {
+                "role": "user",
+                "content": f"Analyze this payload and return the structured audit matrix:\n\n{json.dumps(evaluation_package, indent=2)}"
+            }
+        ],
+        temperature=0.1,
+        response_format={"type": "json_object"},
+        # ✅ CORRECT EXTRA BODY FOR MINIMAX
+        extra_body={
+            "reasoning_effort": "low"  # Forces it to cut down thinking text and stick to the JSON schema
+        }
     )
+    # Extract raw execution numbers
+    prompt_tokens = response.usage.prompt_tokens
+    completion_tokens = response.usage.completion_tokens
+    total_tokens = response.usage.total_tokens
 
-    return response.text
+    print(f"Input: {prompt_tokens} tokens | Output: {completion_tokens} tokens")
 
+    # Llama 3.3 70B cost math ($0.90 per 1M tokens for input and output)
+    total_cost = ((prompt_tokens / 1_000_000) * 0.90) + ((completion_tokens / 1_000_000) * 0.90)
+    print(f"Approximate Call Cost: ${total_cost:.6f}")
+
+    return response.choices[0].message.content
 
 # =====================================================================
 # 🚀 ROUTING RUNTIME INTERFACES
