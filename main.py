@@ -1,7 +1,6 @@
 import hashlib
-from multiprocessing import context
-from multiprocessing import context
 import os
+from pathlib import Path
 
 from src.video.validator import (
     validate_video,
@@ -25,6 +24,10 @@ from src.ai.fireworks.multimodal import (
 from src.ai.context_builder import (
     build_video_context,
 )
+from src.ai.content_generator import (
+    generate_content,
+    save_generated_content,
+)
 
 from src.models.visual_window import (
     VisualWindowAnalysis,
@@ -38,12 +41,58 @@ from src.utils import (
     load_json,
 )
 
-
 VIDEO_PATH = "data/videos/test.mp4"
 
 DATA_DIR = "data"
 OUTPUT_DIR = "outputs"
 
+
+def run_content_generation(
+    video_id: str,
+    platform: str = "youtube",
+) -> Path:
+    output_dir = Path("outputs") / video_id
+
+    video_context_path = output_dir / "video_context.json"
+
+    syntax_paths = {
+        "youtube": Path("src/syntax/yt_syntax.json"),
+        "web": Path("src/syntax/w_syntax.json"),
+    }
+
+    if platform not in syntax_paths:
+        raise ValueError(
+            f"Unsupported platform: {platform}. "
+            f"Supported platforms: {list(syntax_paths.keys())}"
+        )
+
+    if not video_context_path.exists():
+        raise FileNotFoundError(
+            f"Video context not found: {video_context_path}"
+        )
+
+    syntax_path = syntax_paths[platform]
+
+    if not syntax_path.exists():
+        raise FileNotFoundError(
+            f"Platform syntax not found: {syntax_path}"
+        )
+
+    generated_content = generate_content(
+        video_context_path=video_context_path,
+        syntax_path=syntax_path,
+    )
+
+    generated_content_path = (
+        output_dir / "generated_content.json"
+    )
+
+    save_generated_content(
+        generated_content=generated_content,
+        output_path=generated_content_path,
+    )
+
+    return generated_content_path
 
 def generate_video_id(
     video_path: str,
@@ -124,6 +173,10 @@ def build_video_paths(
         "caption_context": os.path.join(
             video_output_dir,
             "caption_context.json",
+        ),
+        "generated_content": os.path.join(
+            video_output_dir,
+            "generated_content.json",
         ),
     }
 
@@ -478,6 +531,7 @@ def main():
     paths = build_video_paths(
         video_id
     )
+    
 
     print(
         f"Video ID: {video_id}"
@@ -658,6 +712,35 @@ def main():
     print(
         "\n"
         + "=" * 60
+    )
+
+    print(
+    "\n9. Generating titles, descriptions, "
+    "and hashtags..."
+)
+
+    generated_content = generate_content(
+        video_context_path=Path(
+            paths["caption_context"]
+        ),
+        syntax_path=Path(
+            "src/syntax/yt_syntax.json"
+        ),
+    )
+
+    save_generated_content(
+        generated_content=generated_content,
+        output_path=Path(
+            paths["generated_content"]
+        ),
+    )
+
+    print(
+        "Generated content saved to:"
+    )
+
+    print(
+        paths["generated_content"]
     )
 
     print(

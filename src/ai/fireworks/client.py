@@ -40,3 +40,15 @@ def get_fireworks_client() -> OpenAI:
         )
 
     return _client
+def get_fireworks_client() -> OpenAI:
+    api_key = os.environ.get("FIREWORKS_API_KEY")
+
+    if not api_key:
+        raise RuntimeError(
+            "FIREWORKS_API_KEY environment variable is not set"
+        )
+
+    return OpenAI(
+        api_key=api_key,
+        base_url="https://api.fireworks.ai/inference/v1",
+    )
