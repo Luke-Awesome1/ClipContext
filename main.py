@@ -1,6 +1,23 @@
 import hashlib
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv()
+import argparse
+from src.config import (
+    validate_environment,
+)
+from src.trends.worldwide_analyzer import (
+    run_worldwide_analysis,
+)
+
+from src.trends.trend_analyzer import (
+    run_creator_analysis,
+)
+
+from src.models.discriminator.discriminator import (
+    run_discriminator,
+)
 
 from src.video.validator import (
     validate_video,
@@ -41,58 +58,66 @@ from src.utils import (
     load_json,
 )
 
-VIDEO_PATH = "data/videos/test.mp4"
+PROJECT_ROOT = Path(
+    __file__
+).resolve().parent
 
-DATA_DIR = "data"
-OUTPUT_DIR = "outputs"
+str(video_path) = (
+    PROJECT_ROOT
+    / "data"
+    / "videos"
+    / "test.mp4"
+)
+
+DATA_DIR = (
+    PROJECT_ROOT
+    / "data"
+)
+
+OUTPUT_DIR = (
+    PROJECT_ROOT
+    / "outputs"
+)
+
+creator_handle = "Thinknomyofficial"
+
+content_platform = "youtube"
 
 
-def run_content_generation(
-    video_id: str,
-    platform: str = "youtube",
-) -> Path:
-    output_dir = Path("outputs") / video_id
-
-    video_context_path = output_dir / "video_context.json"
-
-    syntax_paths = {
-        "youtube": Path("src/syntax/yt_syntax.json"),
-        "web": Path("src/syntax/w_syntax.json"),
-    }
-
-    if platform not in syntax_paths:
-        raise ValueError(
-            f"Unsupported platform: {platform}. "
-            f"Supported platforms: {list(syntax_paths.keys())}"
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run the ClipContext video "
+            "analysis pipeline"
         )
-
-    if not video_context_path.exists():
-        raise FileNotFoundError(
-            f"Video context not found: {video_context_path}"
-        )
-
-    syntax_path = syntax_paths[platform]
-
-    if not syntax_path.exists():
-        raise FileNotFoundError(
-            f"Platform syntax not found: {syntax_path}"
-        )
-
-    generated_content = generate_content(
-        video_context_path=video_context_path,
-        syntax_path=syntax_path,
     )
 
-    generated_content_path = (
-        output_dir / "generated_content.json"
+    parser.add_argument(
+        "video",
+        type=Path,
+        help="Path to the input video",
     )
 
-    save_generated_content(
-        generated_content=generated_content,
-        output_path=generated_content_path,
+    parser.add_argument(
+        "--creator",
+        type=str,
+        required=True,
+        help=(
+            "YouTube creator handle used for "
+            "creator-specific trend analysis"
+        ),
     )
 
-    return generated_content_path
+    parser.add_argument(
+        "--platform",
+        choices=[
+            "youtube",
+            "web",
+        ],
+        default="youtube",
+    )
+
+    return parser.parse_args()
 
 def generate_video_id(
     video_path: str,
@@ -136,6 +161,16 @@ def build_video_paths(
         video_id,
     )
 
+    trends_dir = os.path.join(
+        video_output_dir,
+        "trends",
+    )
+
+    syntax_dir = os.path.join(
+        video_output_dir,
+        "syntax",
+    )
+
     os.makedirs(
         video_output_dir,
         exist_ok=True,
@@ -150,7 +185,65 @@ def build_video_paths(
         frame_dir,
         exist_ok=True,
     )
-    
+
+    os.makedirs(
+        trends_dir,
+        exist_ok=True,
+    )
+
+    os.makedirs(
+        syntax_dir,
+        exist_ok=True,
+    )
+
+    return {
+        "output_dir": video_output_dir,
+        "audio": os.path.join(
+            audio_dir,
+            "audio.wav",
+        ),
+        "frames": frame_dir,
+        "transcription": os.path.join(
+            video_output_dir,
+            "transcription.json",
+        ),
+        "visual_timeline": os.path.join(
+            video_output_dir,
+            "visual_timeline.json",
+        ),
+        "video_context": os.path.join(
+            video_output_dir,
+            "video_context.json",
+        ),
+        "caption_context": os.path.join(
+            video_output_dir,
+            "caption_context.json",
+        ),
+        "w_trends": os.path.join(
+            trends_dir,
+            "w_trends.json",
+        ),
+        "yt_trends": os.path.join(
+            trends_dir,
+            "yt_trends.json",
+        ),
+        "w_syntax": os.path.join(
+            syntax_dir,
+            "w_syntax.json",
+        ),
+        "yt_syntax": os.path.join(
+            syntax_dir,
+            "yt_syntax.json",
+        ),
+        "generated_content": os.path.join(
+            video_output_dir,
+            "generated_content.json",
+        ),
+        "audit_report": os.path.join(
+            video_output_dir,
+            "audit_report.json",
+        ),
+    }   
 
     return {
         "audio": os.path.join(
@@ -507,6 +600,34 @@ def save_caption_context(
     return caption_context
 
 def main():
+    
+    validate_environment()
+
+
+
+    print(
+        "\n"
+        + "=" * 60
+    )    
+    
+    args = parse_arguments()
+
+    validate_environment()
+
+    video_path = (
+        args.video
+        .expanduser()
+        .resolve()
+    )
+
+    if not video_path.exists():
+        raise FileNotFoundError(
+            f"Video not found: {video_path}"
+        )
+
+    creator_handle = args.creator
+    content_platform = args.platform
+
     print(
         "\n"
         + "=" * 60
@@ -525,7 +646,7 @@ def main():
     )
 
     video_id = generate_video_id(
-        VIDEO_PATH
+        str(video_path)
     )
 
     paths = build_video_paths(
@@ -542,7 +663,7 @@ def main():
     )
 
     metadata = validate_video(
-        VIDEO_PATH
+        
     )
 
     duration = metadata["duration"]
@@ -556,7 +677,7 @@ def main():
     )
 
     audio_path = extract_audio(
-        VIDEO_PATH,
+        str(video_path),
         paths["audio"],
     )
 
@@ -565,7 +686,7 @@ def main():
     )
 
     candidates = extract_candidate_frames(
-        VIDEO_PATH,
+        str(video_path),
         paths["frames"],
         scan_interval=1.0,
     )
@@ -658,6 +779,39 @@ def main():
         paths["caption_context"]
     )
 
+    print(
+    "\n9. Running worldwide trend analysis..."
+    )
+
+    run_worldwide_analysis(
+        context_path=Path(
+            paths["caption_context"]
+        ),
+        trends_path=Path(
+            paths["w_trends"]
+        ),
+        syntax_path=Path(
+            paths["w_syntax"]
+        ),
+        target_count=30,
+    )
+
+
+    print(
+        "\n10. Running creator trend analysis..."
+    )
+
+    run_creator_analysis(
+        handle=creator_handle,
+        trends_path=Path(
+            paths["yt_trends"]
+        ),
+        syntax_path=Path(
+            paths["yt_syntax"]
+        ),
+        target_count=30,
+    )
+
     total_prompt_tokens = (
         visual_usage["prompt_tokens"]
         + context_usage["prompt_tokens"]
@@ -715,18 +869,35 @@ def main():
     )
 
     print(
-    "\n9. Generating titles, descriptions, "
-    "and hashtags..."
-)
+        "\n11. Generating titles, descriptions, "
+        "and hashtags..."
+    )
+
+
+    if content_platform == "youtube":
+        generation_syntax_path = Path(
+            paths["yt_syntax"]
+        )
+
+    elif content_platform == "web":
+        generation_syntax_path = Path(
+            paths["w_syntax"]
+        )
+
+    else:
+        raise ValueError(
+            "Unsupported content platform: "
+            f"{content_platform}"
+        )
+
 
     generated_content = generate_content(
         video_context_path=Path(
             paths["caption_context"]
         ),
-        syntax_path=Path(
-            "src/syntax/yt_syntax.json"
-        ),
+        syntax_path=generation_syntax_path,
     )
+
 
     save_generated_content(
         generated_content=generated_content,
@@ -734,6 +905,7 @@ def main():
             paths["generated_content"]
         ),
     )
+
 
     print(
         "Generated content saved to:"
@@ -743,6 +915,33 @@ def main():
         paths["generated_content"]
     )
 
+    print(
+    "\n12. Ranking generated candidates..."
+    )
+
+    audit_report = run_discriminator(
+        context_path=Path(
+            paths["video_context"]
+        ),
+        trends_path=Path(
+            paths["w_trends"]
+        ),
+        candidates_path=Path(
+            paths["generated_content"]
+        ),
+        output_path=Path(
+            paths["audit_report"]
+        ),
+    )
+
+
+    print(
+        "Audit report saved to:"
+    )
+
+    print(
+        paths["audit_report"]
+    )
     print(
         "INFERENCE METRICS"
     )
