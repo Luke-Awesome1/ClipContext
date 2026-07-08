@@ -44,7 +44,7 @@ export default function Navbar() {
           className="group flex items-center gap-2 rounded-full px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
         >
           <span className="text-lg font-semibold tracking-tight text-white">
-            Lumina{" "}
+            ClipContext{" "}
             <span className="bg-gradient-to-r from-sky-300 to-blue-500 bg-clip-text text-transparent">
               AI
             </span>

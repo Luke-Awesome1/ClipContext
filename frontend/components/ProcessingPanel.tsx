@@ -30,7 +30,7 @@ export default function ProcessingPanel({
           Processing
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Lumina is analyzing your video
+          ClipContext is analyzing your video
         </h1>
         <p className="mx-auto mt-4 max-w-md text-base text-neutral-400">
           Fusing speech, visuals, and context through our multimodal pipeline.

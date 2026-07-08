@@ -25,7 +25,7 @@ export default function Footer() {
         <SectionReveal delay={0.04} className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-1">
             <Link href="/" className="text-lg font-semibold text-white">
-              Lumina{" "}
+              ClipContext{" "}
               <span className="bg-gradient-to-r from-sky-300 to-blue-500 bg-clip-text text-transparent">
                 AI
               </span>
@@ -59,7 +59,7 @@ export default function Footer() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/[0.06] pt-8 sm:flex-row">
           <p className="text-xs text-neutral-600">
-            © {new Date().getFullYear()} Lumina AI. All rights reserved.
+            © {new Date().getFullYear()} ClipContext. All rights reserved.
           </p>
           <p className="text-xs text-neutral-600">
             Built for creators who refuse to compromise on quality.

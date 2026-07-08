@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lumina AI — Understand Every Video",
+  title: "ClipContext — Understand Every Video",
   description:
     "Multimodal AI that generates captions from speech and visuals. Create better content with context-aware understanding.",
 };

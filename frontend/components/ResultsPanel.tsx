@@ -70,7 +70,7 @@ export default function ResultsPanel({
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `lumina-${(fileName ?? "export").replace(/\.[^.]+$/, "")}-${activeStyle.toLowerCase()}.json`;
+    anchor.download = clipcontext`-${(fileName ?? "export").replace(/\.[^.]+$/, "")}-${activeStyle.toLowerCase()}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
   }, [activeStyle, fileName]);
@@ -86,7 +86,7 @@ export default function ResultsPanel({
         </h1>
         <p className="mt-4 max-w-xl text-base text-neutral-400">
           Switch caption styles to compare outputs. Every version is grounded in
-          what Lumina detected from your video.
+          what ClipContext detected from your video.
         </p>
       </SectionReveal>
 

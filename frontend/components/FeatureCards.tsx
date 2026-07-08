@@ -59,7 +59,7 @@ export default function FeatureCards() {
             Intelligence that sees the full picture.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-neutral-400 sm:text-lg">
-            Most tools only transcribe speech. Lumina understands your video
+            Most tools only transcribe speech. ClipContext understands your video
             holistically — so every caption carries real context.
           </p>
         </SectionReveal>

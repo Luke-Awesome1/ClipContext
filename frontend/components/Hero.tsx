@@ -91,7 +91,7 @@ export default function Hero() {
             variants={fadeUp}
             className="mt-6 max-w-xl text-base leading-7 text-neutral-400 sm:text-lg"
           >
-            Lumina AI listens to speech and reads visuals — analyzing scenes,
+            ClipContext listens to speech and reads visuals — analyzing scenes,
             on-screen text, and tone together — to generate captions, titles,
             and hooks that actually match your video.
           </motion.p>
