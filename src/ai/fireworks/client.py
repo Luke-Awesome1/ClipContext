@@ -8,8 +8,10 @@ load_dotenv()
 
 
 MODEL_ID = (
-    "accounts/fireworks/models/kimi-k2p6"
+    "accounts/fireworks/routers/kimi-k2p6-turbo"
 )
+
+MINMAX_ID = "accounts/fireworks/models/minimax-m2p7"
 
 BASE_URL = (
     "https://api.fireworks.ai/inference/v1"
@@ -40,6 +42,7 @@ def get_fireworks_client() -> OpenAI:
         )
 
     return _client
+
 def get_fireworks_client() -> OpenAI:
     api_key = os.environ.get("FIREWORKS_API_KEY")
 

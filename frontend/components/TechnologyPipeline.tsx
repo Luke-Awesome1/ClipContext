@@ -5,8 +5,8 @@ import {
   ArrowRight,
   BrainCircuit,
   FileText,
-  MessageSquareText,
-  ScanEye,
+  MessageSquare,
+  Eye,
   Sparkles,
   Workflow,
 } from "lucide-react";

@@ -8,12 +8,18 @@ from google import genai
 from google.genai import types
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+from dotenv import load_dotenv
 
 # =====================================================================
 # ⚙️ CONFIGURATION & CLIENT INITIALIZATION
 # =====================================================================
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "AIzaSyCcCZZlkkolUiIokUJ0k_bVhwpCRESMYOA")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AQ.Ab8RN6KgMYtGDUewqeobDIKl4KfIWa1iDX0Q4InZOmnPQoFAFw")
+
+load_dotenv()
+# =====================================================================
+# ⚙️ CONFIGURATION & CLIENT INITIALIZATION
+# =====================================================================
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
@@ -159,7 +165,7 @@ def compile_syntax_payload(clustered_df: pd.DataFrame, file_prefix: str):
     )
 
     # Saved inside the same active workspace path directory
-    syntax_filename = f"syntax_yt-specific_{file_prefix}_v2.json"
+    syntax_filename = f"syntax/yt_syntax.json"
     with open(syntax_filename, "w", encoding="utf-8") as f:
         f.write(response.text)
     print(f"🧬 Strategy Syntax File Created -> {syntax_filename}")
@@ -180,7 +186,7 @@ if __name__ == "__main__":
         processed_matrix = categorize_trends(raw_video_matches)
 
         # Saves trending historical timeline records directly to local workspace root
-        trends_filename = f"yt-specific_trends_{safe_slug}_v2.json"
+        trends_filename = f"trends/yt_trends.json"
         processed_matrix.to_json(trends_filename, orient="records", indent=4)
         print(f"📊 Historical Trends Telemetry File Created -> {trends_filename}")
 
