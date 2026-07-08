@@ -7,6 +7,7 @@ from src.ai.fireworks.client import (
     MINMAX_ID,
     get_fireworks_client,
 )
+from src.models.discriminator.schemas import DiscriminatorResult
 
 
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -107,78 +108,36 @@ def load_validation_payloads(
     )
 
 
-def load_generator_candidates(
+def load_candidate_pools(
     candidates_path: Path,
-) -> list:
+) -> dict:
     with candidates_path.open(
         "r",
         encoding="utf-8",
     ) as file:
         raw_data = json.load(file)
 
-    titles = {
-        item["id"]: item["text"]
-        for item in raw_data.get(
-            "titles",
-            [],
-        )
+    return {
+        "titles": [
+            {"id": item["id"], "text": item["text"]}
+            for item in raw_data.get("titles", [])
+        ],
+        "descriptions": [
+            {"id": item["id"], "text": item["text"]}
+            for item in raw_data.get("descriptions", [])
+        ],
+        "hashtags": [
+            {"id": item["id"], "tags": item["tags"]}
+            for item in raw_data.get("hashtags", [])
+        ],
     }
-
-    descriptions = {
-        item["id"]: item["text"]
-        for item in raw_data.get(
-            "descriptions",
-            [],
-        )
-    }
-
-    hashtags = {
-        item["id"]: item["tags"]
-        for item in raw_data.get(
-            "hashtags",
-            [],
-        )
-    }
-
-    all_ids = (
-        set(titles)
-        | set(descriptions)
-        | set(hashtags)
-    )
-
-    candidates = []
-
-    for candidate_id in sorted(
-        all_ids
-    ):
-        candidates.append(
-            {
-                "candidate_id": candidate_id,
-                "title": titles.get(
-                    candidate_id,
-                    "",
-                ),
-                "description": (
-                    descriptions.get(
-                        candidate_id,
-                        "",
-                    )
-                ),
-                "hashtags": hashtags.get(
-                    candidate_id,
-                    [],
-                ),
-            }
-        )
-
-    return candidates
 
 
 def run_discriminator_audit(
-    candidates_list: list,
+    candidate_pools: dict,
     context_data: dict,
     benchmarks: dict,
-) -> str:
+) -> DiscriminatorResult:
     client = get_fireworks_client()
 
     video_truth_digest = {
@@ -211,10 +170,10 @@ def run_discriminator_audit(
         "historical_performance_benchmarks": (
             benchmarks
         ),
-        "candidates_to_evaluate": (
-            candidates_list
-        ),
+        "candidate_pools": candidate_pools,
     }
+
+    json_schema = DiscriminatorResult.model_json_schema()
 
     response = client.chat.completions.create(
         model=MINMAX_ID,
@@ -228,8 +187,8 @@ def run_discriminator_audit(
             {
                 "role": "user",
                 "content": (
-                    "Analyze this payload and return "
-                    "the structured audit matrix:\n\n"
+                    "Independently rank each candidate pool below "
+                    "and return the structured audit matrix:\n\n"
                     + json.dumps(
                         evaluation_package,
                         indent=2,
@@ -239,7 +198,11 @@ def run_discriminator_audit(
         ],
         temperature=0.1,
         response_format={
-            "type": "json_object"
+            "type": "json_schema",
+            "json_schema": {
+                "name": "DiscriminatorResult",
+                "schema": json_schema,
+            },
         },
         extra_body={
             "reasoning_effort": "low"
@@ -263,7 +226,16 @@ def run_discriminator_audit(
             "Discriminator returned empty content"
         )
 
-    return raw_content
+    try:
+        return DiscriminatorResult.model_validate_json(
+            raw_content
+        )
+
+    except Exception as exc:
+        raise RuntimeError(
+            "Discriminator returned content that could not be "
+            "validated as DiscriminatorResult"
+        ) from exc
 
 
 def run_discriminator(
@@ -271,7 +243,7 @@ def run_discriminator(
     trends_path: Path,
     candidates_path: Path,
     output_path: Path,
-) -> dict:
+) -> DiscriminatorResult:
     context_data, benchmarks = (
         load_validation_payloads(
             context_path=context_path,
@@ -279,25 +251,15 @@ def run_discriminator(
         )
     )
 
-    candidates = load_generator_candidates(
+    candidate_pools = load_candidate_pools(
         candidates_path=candidates_path
     )
 
-    raw_report = run_discriminator_audit(
-        candidates_list=candidates,
+    result = run_discriminator_audit(
+        candidate_pools=candidate_pools,
         context_data=context_data,
         benchmarks=benchmarks,
     )
-
-    try:
-        audit_report = json.loads(
-            raw_report
-        )
-
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            "Discriminator returned invalid JSON"
-        ) from exc
 
     output_path.parent.mkdir(
         parents=True,
@@ -309,7 +271,7 @@ def run_discriminator(
         encoding="utf-8",
     ) as file:
         json.dump(
-            audit_report,
+            result.model_dump(),
             file,
             indent=2,
             ensure_ascii=False,
@@ -320,4 +282,4 @@ def run_discriminator(
         f"{output_path}"
     )
 
-    return audit_report
+    return result

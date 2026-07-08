@@ -7,30 +7,30 @@ import { motion } from "framer-motion";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
 import { useVideoSession } from "@/context/VideoSessionContext";
 
-const captionStyles = ["Professional", "Casual", "Creative", "Minimal"] as const;
+const captionStyles = ["Professional", "Sarcastic", "Tech Humour", "Relatable"] as const;
 
 const stylePreviews: Record<
   (typeof captionStyles)[number],
   { title: string; caption: string }
 > = {
   Professional: {
-    title: "Scaling Product-Led Growth in 2026",
+    title: "The Dream You Hold Is Still Possible",
     caption:
-      "In this segment, the speaker outlines three frameworks for sustainable PLG — from onboarding velocity to expansion revenue loops.",
+      "A grounded motivational description built from transcript, visible text, emotional arc, and selected visual windows.",
   },
-  Casual: {
-    title: "okay so here's the thing about growth 👀",
+  Sarcastic: {
+    title: "Your Dream Called. It Still Has Audacity.",
     caption:
-      "real talk — most teams overcomplicate PLG. start with one killer onboarding moment and build from there.",
+      "Disappointment arrived loudly. The video still makes the case that the dream deserves another round.",
   },
-  Creative: {
-    title: "When Growth Becomes Gravity ✦",
+  "Tech Humour": {
+    title: "POV: the dream is still possible",
     caption:
-      "Every product has a moment where users stop searching — and start orbiting. This is how you find yours.",
+      "city window, visible dream text, mountain shot, full main character recovery arc.",
   },
-  Minimal: {
-    title: "Product-led growth",
-    caption: "Three frameworks. One onboarding moment. Sustainable expansion.",
+  Relatable: {
+    title: "The Dream Is Running Late, Not Cancelled",
+    caption: "A short-form caption that keeps the motivational point clear without inventing details.",
   },
 };
 
@@ -58,9 +58,8 @@ export default function Hero() {
   return (
     <section className="relative overflow-hidden pt-28 pb-20 sm:pt-36 sm:pb-28">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-0 h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-blue-500/10 blur-[140px]" />
-        <div className="absolute -right-20 top-28 h-72 w-72 rounded-full bg-slate-400/10 blur-[110px]" />
-        <div className="absolute bottom-0 left-0 h-56 w-56 rounded-full bg-white/5 blur-[100px]" />
+        <div className="absolute left-0 top-24 h-px w-full bg-neutral-200/70" />
+        <div className="absolute bottom-10 left-0 h-px w-full bg-neutral-200/70" />
       </div>
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-16 px-5 sm:px-8 lg:grid-cols-2 lg:gap-12">
@@ -68,32 +67,33 @@ export default function Hero() {
           <motion.div
             custom={0}
             variants={fadeUp}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-neutral-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-sm"
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/70 px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-sm backdrop-blur-sm"
           >
-            <Sparkles size={14} className="text-blue-400" />
-            Multimodal AI for thoughtful creators
+            <Sparkles size={14} className="text-[#365f53]" />
+            Sparse multimodal analysis for creators
           </motion.div>
 
           <motion.h1
             custom={1}
             variants={fadeUp}
-            className="text-4xl font-semibold leading-[0.96] tracking-[-0.03em] text-white sm:text-5xl lg:text-[3.45rem]"
+            className="text-4xl font-semibold leading-[0.98] text-neutral-950 sm:text-5xl lg:text-[3.45rem]"
           >
-            Understand Every Video.
+            Extract the useful context.
             <br />
-            <span className="bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
-              Create Better Content.
+            <span className="text-[#365f53]">
+              Generate grounded candidates.
             </span>
           </motion.h1>
 
           <motion.p
             custom={2}
             variants={fadeUp}
-            className="mt-6 max-w-xl text-base leading-7 text-neutral-400 sm:text-lg"
+            className="mt-6 max-w-xl text-base leading-7 text-neutral-600 sm:text-lg"
           >
-            ClipContext listens to speech and reads visuals — analyzing scenes,
-            on-screen text, and tone together — to generate captions, titles,
-            and hooks that actually match your video.
+            ClipContext validates a short video, transcribes speech locally,
+            selects sparse temporal frames, builds a canonical VideoContext,
+            then generates title, description, and hashtag candidates that stay
+            tied to the evidence.
           </motion.p>
 
           <motion.div
@@ -104,7 +104,7 @@ export default function Hero() {
             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
               <Link
                 href="#upload"
-                className="inline-flex items-center gap-2 rounded-full bg-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_32px_rgba(91,140,255,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_0_42px_rgba(91,140,255,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
+                className="inline-flex items-center gap-2 rounded-full bg-neutral-950 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#365f53] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
               >
                 Upload Video
                 <ArrowRight size={16} />
@@ -114,9 +114,9 @@ export default function Hero() {
               <button
                 type="button"
                 onClick={handleWatchDemo}
-                className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.04] px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
+                className="inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white/70 px-6 py-3 text-sm font-semibold text-neutral-900 backdrop-blur-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#365f53]/30 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
               >
-                <Play size={16} className="fill-white text-white" />
+                <Play size={16} className="fill-neutral-900 text-neutral-900" />
                 Watch Demo
               </button>
             </motion.div>
@@ -132,14 +132,12 @@ export default function Hero() {
           <motion.div
             animate={{ y: [0, -10, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative rounded-[1.75rem] border border-white/[0.1] bg-white/[0.05] p-4 shadow-[0_30px_90px_rgba(0,0,0,0.38)] backdrop-blur-2xl sm:p-5"
+            className="relative rounded-lg border border-neutral-200 bg-white/80 p-4 shadow-sm backdrop-blur-2xl sm:p-5"
           >
-            <div className="absolute -inset-px rounded-[1.75rem] bg-gradient-to-b from-white/[0.14] via-white/[0.06] to-transparent opacity-60" />
-
             <div className="relative space-y-4">
-              <div className="relative overflow-hidden rounded-[1.15rem] border border-white/[0.06] bg-neutral-900/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                <div className="aspect-video bg-gradient-to-br from-neutral-800 via-neutral-900 to-[#0C0F0F]">
-                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(91,140,255,0.18),transparent_55%)]" />
+              <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-neutral-900 shadow-sm">
+                <div className="aspect-video bg-[linear-gradient(135deg,#1f2933,#111827_45%,#2f3d36)]">
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-black/35" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <motion.div
                       animate={{ y: [0, -3, 0], scale: [1, 1.02, 1] }}
@@ -150,7 +148,7 @@ export default function Hero() {
                     </motion.div>
                   </div>
                   <div className="absolute bottom-3 left-3 rounded-md bg-black/50 px-2 py-1 text-[10px] font-medium text-neutral-300 backdrop-blur-sm">
-                    product-demo.mp4 · 1:24
+                    test-video.mp4 · 0:38
                   </div>
                 </div>
               </div>
@@ -162,10 +160,10 @@ export default function Hero() {
                     type="button"
                     onClick={() => setActiveStyle(style)}
                     aria-pressed={activeStyle === style}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F] ${
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
                       activeStyle === style
-                        ? "bg-blue-500/20 text-blue-300 ring-1 ring-blue-400/30"
-                        : "bg-white/[0.04] text-neutral-400 hover:bg-white/[0.07] hover:text-neutral-200"
+                        ? "bg-[#365f53]/10 text-[#365f53] ring-1 ring-[#365f53]/25"
+                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-950"
                     }`}
                   >
                     {style}
@@ -173,21 +171,21 @@ export default function Hero() {
                 ))}
               </div>
 
-              <div className="space-y-3 rounded-[1.15rem] border border-white/[0.06] bg-black/20 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <div className="space-y-3 rounded-lg border border-neutral-200 bg-[#faf9f6] p-4 shadow-sm">
                 <div>
                   <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-                    Generated Title
+                    Generated Title Candidate
                   </p>
-                  <p className="text-sm font-semibold leading-snug text-white">
+                  <p className="text-sm font-semibold leading-snug text-neutral-950">
                     {preview.title}
                   </p>
                 </div>
-                <div className="h-px bg-white/[0.06]" />
+                <div className="h-px bg-neutral-200" />
                 <div>
                   <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-                    Caption Preview
+                    Description Preview
                   </p>
-                  <p className="text-sm leading-relaxed text-neutral-400">
+                  <p className="text-sm leading-relaxed text-neutral-600">
                     {preview.caption}
                   </p>
                 </div>
@@ -195,8 +193,6 @@ export default function Hero() {
             </div>
           </motion.div>
 
-          <div className="absolute -bottom-6 -left-6 -z-10 h-32 w-32 rounded-full bg-blue-500/20 blur-3xl" />
-          <div className="absolute -right-4 -top-4 -z-10 h-24 w-24 rounded-full bg-sky-400/15 blur-2xl" />
         </motion.div>
       </div>
     </section>

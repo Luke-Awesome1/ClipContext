@@ -9,7 +9,7 @@ import PageTransition from "@/components/ui/PageTransition";
 export default function Home() {
   return (
     <PageTransition>
-      <main className="min-h-screen overflow-x-hidden bg-[#0C0F0F] text-white">
+      <main className="min-h-screen overflow-x-hidden bg-[#f6f5f2] text-neutral-950">
         <Navbar />
         <Hero />
         <UploadSection />

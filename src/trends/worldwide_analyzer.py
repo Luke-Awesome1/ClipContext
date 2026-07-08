@@ -7,6 +7,7 @@ import isodate
 import pandas as pd
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
@@ -15,14 +16,14 @@ from src.ai.fireworks.client import get_fireworks_client
 
 load_dotenv()
 
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-
 # MiniMax model identifier configured on your Fireworks layer
 MINIMAX_MODEL_ID = "accounts/fireworks/models/minimax-m3"
 
 
 def get_youtube_client():
-    if not YOUTUBE_API_KEY:
+    api_key = os.getenv("YOUTUBE_API_KEY")
+
+    if not api_key:
         raise RuntimeError(
             "YOUTUBE_API_KEY environment variable is not set"
         )
@@ -30,7 +31,7 @@ def get_youtube_client():
     return build(
         "youtube",
         "v3",
-        developerKey=YOUTUBE_API_KEY,
+        developerKey=api_key,
     )
 
 
@@ -106,17 +107,24 @@ def fetch_worldwide_trends(search_query: str, target_count: int = 30) -> list:
     print(f"Scraping global short-form pool for: '{search_query}'...")
 
     while len(valid_clips) < target_count:
-        search_request = youtube.search().list(
-            part="id,snippet",
-            q=search_query,
-            type="video",
-            order="viewCount",
-            videoDuration="short",
-            maxResults=50,
-            pageToken=next_page_token,
-        )
+        try:
+            search_request = youtube.search().list(
+                part="id,snippet",
+                q=search_query,
+                type="video",
+                order="viewCount",
+                videoDuration="short",
+                maxResults=50,
+                pageToken=next_page_token,
+            )
 
-        search_response = search_request.execute()
+            search_response = search_request.execute()
+        except HttpError as error:
+            raise RuntimeError(
+                "YouTube API request failed while fetching worldwide "
+                f"trends (status {error.resp.status}). This may be a "
+                "quota or configuration issue with YOUTUBE_API_KEY."
+            ) from error
 
         video_ids = [
             item["id"]["videoId"]
@@ -127,22 +135,36 @@ def fetch_worldwide_trends(search_query: str, target_count: int = 30) -> list:
         if not video_ids:
             break
 
-        stats_request = youtube.videos().list(
-            part="snippet,statistics,contentDetails",
-            id=",".join(video_ids),
-        )
+        try:
+            stats_request = youtube.videos().list(
+                part="snippet,statistics,contentDetails",
+                id=",".join(video_ids),
+            )
 
-        stats_response = stats_request.execute()
+            stats_response = stats_request.execute()
+        except HttpError as error:
+            raise RuntimeError(
+                "YouTube API request failed while fetching video "
+                f"statistics (status {error.resp.status})."
+            ) from error
 
         for video in stats_response.get("items", []):
-            raw_duration = video["contentDetails"]["duration"]
+            content_details = video.get("contentDetails", {})
+            raw_duration = content_details.get("duration")
+
+            if not raw_duration:
+                continue
+
             duration_seconds = isodate.parse_duration(raw_duration).total_seconds()
 
             if not 30 <= duration_seconds <= 120:
                 continue
 
-            raw_title = video["snippet"]["title"]
-            raw_description = video["snippet"]["description"]
+            snippet = video.get("snippet", {})
+            statistics = video.get("statistics", {})
+
+            raw_title = snippet.get("title", "")
+            raw_description = snippet.get("description", "")
 
             all_hashtags = list(
                 set(
@@ -162,9 +184,9 @@ def fetch_worldwide_trends(search_query: str, target_count: int = 30) -> list:
                     "raw_description": raw_description,
                     "clean_description": clean_description,
                     "extracted_hashtags": all_hashtags,
-                    "views": int(video["statistics"].get("viewCount", 0)),
-                    "likes": int(video["statistics"].get("likeCount", 0)),
-                    "comments": int(video["statistics"].get("commentCount", 0)),
+                    "views": int(statistics.get("viewCount", 0)),
+                    "likes": int(statistics.get("likeCount", 0)),
+                    "comments": int(statistics.get("commentCount", 0)),
                     "duration": duration_seconds,
                 }
             )

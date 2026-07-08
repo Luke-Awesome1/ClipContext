@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.env
+.git/
+.DS_Store
+
+data/
+outputs/
+tests/
+
+frontend/
+Dockerfile
+.dockerignore
+README.md
+AGENT.md

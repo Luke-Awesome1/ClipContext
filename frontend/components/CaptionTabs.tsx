@@ -1,11 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CAPTION_STYLES, type CaptionStyle } from "@/types/video";
+
+export type CandidatePool = "titles" | "descriptions" | "hashtags";
+
+const POOL_LABELS: Record<CandidatePool, string> = {
+  titles: "Titles",
+  descriptions: "Descriptions",
+  hashtags: "Hashtags",
+};
+
+const POOLS: CandidatePool[] = ["titles", "descriptions", "hashtags"];
 
 interface CaptionTabsProps {
-  active: CaptionStyle;
-  onChange: (style: CaptionStyle) => void;
+  active: CandidatePool;
+  onChange: (pool: CandidatePool) => void;
   size?: "sm" | "md";
 }
 
@@ -18,27 +27,27 @@ export default function CaptionTabs({
 
   return (
     <div className="flex flex-wrap gap-2">
-      {CAPTION_STYLES.map((style) => {
-        const isActive = active === style;
+      {POOLS.map((pool) => {
+        const isActive = active === pool;
         return (
           <button
-            key={style}
+            key={pool}
             type="button"
-            onClick={() => onChange(style)}
+            onClick={() => onChange(pool)}
             className={`relative rounded-lg font-medium transition-colors ${pad} ${
               isActive
-                ? "text-blue-300"
-                : "text-neutral-400 hover:bg-white/[0.05] hover:text-neutral-200"
+                ? "text-[#365f53]"
+                : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950"
             }`}
           >
             {isActive && (
               <motion.span
                 layoutId="caption-tab-highlight"
-                className="absolute inset-0 rounded-lg bg-blue-500/20 shadow-[0_0_24px_rgba(59,130,246,0.16)] ring-1 ring-blue-400/30"
+                className="absolute inset-0 rounded-lg bg-[#365f53]/10 ring-1 ring-[#365f53]/25"
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
-            <span className="relative">{style}</span>
+            <span className="relative">{POOL_LABELS[pool]}</span>
           </button>
         );
       })}

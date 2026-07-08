@@ -15,7 +15,7 @@ from src.models.visual_window import (
 )
 
 
-MAX_OUTPUT_TOKENS = 500
+MAX_OUTPUT_TOKENS = 1000
 
 
 def encode_image(

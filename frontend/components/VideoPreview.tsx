@@ -17,7 +17,7 @@ export default function VideoPreview({
 }: VideoPreviewProps) {
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border border-white/[0.08] bg-neutral-900/80 ${className}`}
+      className={`relative overflow-hidden rounded-lg border border-neutral-200 bg-neutral-900 ${className}`}
     >
       {videoUrl ? (
         <video

@@ -7,6 +7,7 @@ import isodate
 import pandas as pd
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 
@@ -14,13 +15,11 @@ from src.ai.fireworks.client import get_fireworks_client, MINMAX_ID
 
 load_dotenv()
 
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-
-
-
 
 def get_youtube_client():
-    if not YOUTUBE_API_KEY:
+    api_key = os.getenv("YOUTUBE_API_KEY")
+
+    if not api_key:
         raise RuntimeError(
             "YOUTUBE_API_KEY environment variable is not set"
         )
@@ -28,7 +27,7 @@ def get_youtube_client():
     return build(
         "youtube",
         "v3",
-        developerKey=YOUTUBE_API_KEY,
+        developerKey=api_key,
     )
 
 
@@ -38,22 +37,42 @@ def get_channel_id(handle: str) -> str:
     if not handle.startswith("@"):
         handle = "@" + handle
 
-    request = youtube.search().list(
-        part="snippet",
-        q=handle,
-        type="channel",
-        maxResults=1,
-    )
-
-    response = request.execute()
-    items = response.get("items", [])
-
-    if not items:
-        raise ValueError(
-            f"Profile {handle} could not be found"
+    try:
+        request = youtube.channels().list(
+            part="id",
+            forHandle=handle,
+            maxResults=1,
         )
 
-    return items[0]["snippet"]["channelId"]
+        response = request.execute()
+        items = response.get("items", [])
+
+        if items:
+            return items[0]["id"]
+
+        search_request = youtube.search().list(
+            part="snippet",
+            q=handle,
+            type="channel",
+            maxResults=1,
+        )
+
+        search_response = search_request.execute()
+        search_items = search_response.get("items", [])
+
+        if not search_items:
+            raise ValueError(
+                f"Creator {handle} could not be found on YouTube"
+            )
+
+        return search_items[0]["snippet"]["channelId"]
+
+    except HttpError as error:
+        raise RuntimeError(
+            "YouTube API request failed while resolving the creator "
+            f"channel (status {error.resp.status}). This may be a quota "
+            "or configuration issue with YOUTUBE_API_KEY."
+        ) from error
 
 
 def fetch_creator_trends(handle: str, target_count: int = 30) -> list:
@@ -66,16 +85,23 @@ def fetch_creator_trends(handle: str, target_count: int = 30) -> list:
     print(f"Scraping creator short-form pool for: {handle}...")
 
     while len(valid_clips) < target_count:
-        search_request = youtube.search().list(
-            part="id,snippet",
-            channelId=channel_id,
-            type="video",
-            order="viewCount",
-            maxResults=50,
-            pageToken=next_page_token,
-        )
+        try:
+            search_request = youtube.search().list(
+                part="id,snippet",
+                channelId=channel_id,
+                type="video",
+                order="viewCount",
+                maxResults=50,
+                pageToken=next_page_token,
+            )
 
-        search_response = search_request.execute()
+            search_response = search_request.execute()
+        except HttpError as error:
+            raise RuntimeError(
+                "YouTube API request failed while fetching creator videos "
+                f"(status {error.resp.status}). This may be a quota or "
+                "configuration issue with YOUTUBE_API_KEY."
+            ) from error
 
         video_ids = [
             item["id"]["videoId"]
@@ -86,23 +112,36 @@ def fetch_creator_trends(handle: str, target_count: int = 30) -> list:
         if not video_ids:
             break
 
-        stats_request = youtube.videos().list(
-            part="snippet,statistics,contentDetails",
-            id=",".join(video_ids),
-        )
+        try:
+            stats_request = youtube.videos().list(
+                part="snippet,statistics,contentDetails",
+                id=",".join(video_ids),
+            )
 
-        stats_response = stats_request.execute()
+            stats_response = stats_request.execute()
+        except HttpError as error:
+            raise RuntimeError(
+                "YouTube API request failed while fetching video "
+                f"statistics (status {error.resp.status})."
+            ) from error
 
         for video in stats_response.get("items", []):
-            duration_seconds = isodate.parse_duration(
-                video["contentDetails"]["duration"]
-            ).total_seconds()
+            content_details = video.get("contentDetails", {})
+            raw_duration = content_details.get("duration")
+
+            if not raw_duration:
+                continue
+
+            duration_seconds = isodate.parse_duration(raw_duration).total_seconds()
 
             if not 30 <= duration_seconds <= 120:
                 continue
 
-            raw_title = video["snippet"]["title"]
-            raw_description = video["snippet"]["description"]
+            snippet = video.get("snippet", {})
+            statistics = video.get("statistics", {})
+
+            raw_title = snippet.get("title", "")
+            raw_description = snippet.get("description", "")
 
             hashtags = list(
                 set(
@@ -122,9 +161,9 @@ def fetch_creator_trends(handle: str, target_count: int = 30) -> list:
                     "raw_description": raw_description,
                     "clean_description": clean_description,
                     "extracted_hashtags": hashtags,
-                    "views": int(video["statistics"].get("viewCount", 0)),
-                    "likes": int(video["statistics"].get("likeCount", 0)),
-                    "comments": int(video["statistics"].get("commentCount", 0)),
+                    "views": int(statistics.get("viewCount", 0)),
+                    "likes": int(statistics.get("likeCount", 0)),
+                    "comments": int(statistics.get("commentCount", 0)),
                     "duration": duration_seconds,
                 }
             )

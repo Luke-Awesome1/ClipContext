@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import StudioNavbar from "@/components/StudioNavbar";
 import JourneyStepper from "@/components/JourneyStepper";
 import ProcessingPanel from "@/components/ProcessingPanel";
 import VideoPreview from "@/components/VideoPreview";
 import { useVideoSession } from "@/context/VideoSessionContext";
-import { PIPELINE_STAGES } from "@/lib/generatedContent";
+import { useJobPolling } from "@/lib/useJobPolling";
 import PageTransition from "@/components/ui/PageTransition";
 
 export default function ProcessPage() {
   const router = useRouter();
-  const { hasSession, videoUrl, fileName, isDemo } = useVideoSession();
-  const [activeStageIndex, setActiveStageIndex] = useState(0);
-  const [stageProgress, setStageProgress] = useState(0);
+  const { hasSession, videoUrl, fileName, isDemo, jobId, setJobStatus } =
+    useVideoSession();
+  const { jobStatus, error } = useJobPolling(jobId);
 
   useEffect(() => {
     if (!hasSession) {
@@ -23,49 +23,45 @@ export default function ProcessPage() {
   }, [hasSession, router]);
 
   useEffect(() => {
-    if (!hasSession) return;
+    if (!jobStatus) return;
 
-    let stageIndex = 0;
-    let progress = 0;
-    let raf: number;
-    let lastTime = performance.now();
+    setJobStatus(jobStatus.status);
 
-    const tick = (now: number) => {
-      const delta = now - lastTime;
-      lastTime = now;
-      const stage = PIPELINE_STAGES[stageIndex];
-      if (!stage) return;
-
-      const increment = (delta / stage.durationMs) * 100;
-      progress = Math.min(100, progress + increment);
-      setStageProgress(progress);
-      setActiveStageIndex(stageIndex);
-
-      if (progress >= 100) {
-        stageIndex += 1;
-        progress = 0;
-        if (stageIndex >= PIPELINE_STAGES.length) {
-          router.push("/results");
-          return;
-        }
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [hasSession, router]);
+    if (jobStatus.status === "completed") {
+      router.push("/results");
+    }
+  }, [jobStatus, setJobStatus, router]);
 
   if (!hasSession) return null;
 
+  // Demo mode has no backend job — keep the legacy staged animation dormant
+  // and simply route straight through once mounted.
+  if (isDemo && !jobId) {
+    return (
+      <PageTransition>
+        <main className="min-h-screen bg-[#f6f5f2] pt-24 pb-20 text-neutral-950">
+          <StudioNavbar />
+          <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+            <JourneyStepper current="processing" />
+            <ProcessingPanel
+              currentStage="completed"
+              progress={100}
+              message="Demo mode: showing sample output."
+              error={null}
+            />
+          </div>
+        </main>
+      </PageTransition>
+    );
+  }
+
   return (
     <PageTransition>
-      <main className="min-h-screen bg-[#0C0F0F] pt-24 pb-20 text-white">
+      <main className="min-h-screen bg-[#f6f5f2] pt-24 pb-20 text-neutral-950">
         <StudioNavbar />
 
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute left-1/2 top-0 h-[480px] w-[640px] -translate-x-1/2 rounded-full bg-blue-600/8 blur-[120px]" />
+          <div className="absolute left-1/2 top-0 h-[360px] w-[560px] -translate-x-1/2 bg-white/45 blur-[120px]" />
         </div>
 
         <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
@@ -73,12 +69,14 @@ export default function ProcessPage() {
 
           <div className="grid items-start gap-12 lg:grid-cols-2">
             <ProcessingPanel
-              activeStageIndex={activeStageIndex}
-              stageProgress={stageProgress}
+              currentStage={jobStatus?.stage ?? "queued"}
+              progress={jobStatus?.progress ?? 0}
+              message={jobStatus?.message ?? "Connecting to ClipContext..."}
+              error={jobStatus?.status === "failed" ? jobStatus.error : error}
             />
 
             <div className="hidden lg:block">
-              <div className="sticky top-28 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 backdrop-blur-xl">
+              <div className="sticky top-28 rounded-lg border border-neutral-200 bg-white/70 p-4 shadow-sm backdrop-blur-xl">
                 <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">
                   Source Video
                 </p>

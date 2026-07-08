@@ -1,114 +1,75 @@
-import type { CaptionStyle, VideoAnalysis } from "@/types/video";
+import type { PipelineResult, RankedCandidate } from "@/types/video";
 
-export const PIPELINE_STAGES = [
-  { id: "speech" as const, label: "Understanding Speech", durationMs: 2200 },
-  { id: "visual" as const, label: "Understanding Visual Frames", durationMs: 2600 },
-  { id: "context" as const, label: "Building Unified Context", durationMs: 2000 },
-  { id: "title" as const, label: "Generating Title", durationMs: 1400 },
-  { id: "caption" as const, label: "Generating Caption", durationMs: 1600 },
-  { id: "summary" as const, label: "Generating Summary", durationMs: 1200 },
-  { id: "hashtags" as const, label: "Generating Hashtags", durationMs: 1000 },
+// Demo-mode sample data only. Never used on the real upload -> job ->
+// results path; that path always renders backend-sourced PipelineResult.
+const DEMO_TITLES = [
+  "The Dream You Hold Is Still Possible",
+  "Your Dream Called. It Still Has Audacity.",
+  "POV: the dream is still possible",
+  "The Dream Is Running Late, Not Cancelled",
+  "Why This Dream Refuses To Die",
+  "I Almost Gave Up On This Dream",
+  "The Quiet Case For Not Quitting",
+  "This Is What Holding On Looks Like",
+  "Dreams Don't Expire, You Just Got Tired",
+  "One More Try: A Short Film On Persistence",
 ];
 
-const outputs: Record<CaptionStyle, VideoAnalysis["outputs"][CaptionStyle]> = {
-  Formal: {
-    title: "Three Frameworks for Sustainable Product-Led Growth",
-    caption:
-      "In this walkthrough, the founder breaks down how early-stage teams can align onboarding, activation, and expansion into one measurable growth loop — with live dashboard examples from their Q1 rollout.",
-    summary:
-      "A structured founder-led explainer covering product-led growth mechanics. ClipContext detected spoken frameworks, on-screen analytics, and emphasis on retention metrics to produce a publication-ready formal caption suited for LinkedIn or YouTube descriptions.",
-    hashtags: [
-      "#ProductLedGrowth",
-      "#StartupStrategy",
-      "#SaaS",
-      "#FounderTips",
-      "#GrowthMarketing",
-      "#B2BSaaS",
-      "#Onboarding",
-      "#Retention",
-    ],
-  },
-  Sarcastic: {
-    title: "Another PLG Video. Somehow Still Useful.",
-    caption:
-      "Oh great, another founder explaining growth loops like it's a TED talk — except this one actually shows the dashboard, names the metrics, and doesn't say \"synergy\" once. Shocking.",
-    summary:
-      "Dry, self-aware tone for audiences who scroll past generic startup advice. Visual cues (live charts, Q1 overlay) and confident delivery informed a caption that sounds sharp without losing the substance.",
-    hashtags: [
-      "#StartupLife",
-      "#PLG",
-      "#FounderReality",
-      "#SaaSHumor",
-      "#BuildInPublic",
-      "#NotAnotherPitch",
-      "#GrowthLoop",
-      "#TechTwitter",
-    ],
-  },
-  "Humor-T": {
-    title: "POV: ur growth loop actually loops 💀",
-    caption:
-      "bro really said \"let me cook\" and pulled up THREE frameworks + the dashboard in 90 sec no cap 📈 onboarding → activation → expansion is giving main character arc and i'm here for it",
-    summary:
-      "Trend-forward voice tuned for Reels and TikTok. Fast pacing, direct-to-camera energy, and screen-recording segments mapped to short-form slang while keeping the core PLG message intact.",
-    hashtags: [
-      "#POV",
-      "#StartupTok",
-      "#PLG",
-      "#SaaS",
-      "#FounderLife",
-      "#GrowthTips",
-      "#TechTok",
-      "#MainCharacterEnergy",
-    ],
-  },
-  "Humor-NT": {
-    title: "My Growth Loop Has More Steps Than My Morning Coffee Routine",
-    caption:
-      "So I'm watching this founder explain product-led growth and honestly? It's like making coffee. Grind the onboarding, brew the activation, and pray the expansion doesn't spill everywhere. Three frameworks. One dashboard. Zero regrets.",
-    summary:
-      "Classic, approachable humor without meme slang. ClipContext matched the instructional tone and visual dashboard segments to a caption that works for Facebook, email newsletters, or audiences outside trend-heavy platforms.",
-    hashtags: [
-      "#StartupHumor",
-      "#ProductLedGrowth",
-      "#SmallBusiness",
-      "#EntrepreneurLife",
-      "#SaaSFounder",
-      "#MarketingTips",
-      "#CoffeeAndCode",
-      "#WorkSmarter",
-    ],
-  },
-};
+const DEMO_DESCRIPTIONS = [
+  "A motivational short built around persistence, disappointment, and the belief that a dream can remain possible even when the path has been difficult.",
+  "Sure, disappointment showed up uninvited. This video makes the case that the dream in your head still deserves another round.",
+  "that dream in your head really said \"we are not done here.\" city window, big feelings, mountain shot, whole main character arc.",
+  "Sometimes a dream feels like it missed the bus. This clip is the reminder that late does not mean impossible.",
+  "A grounded look at what it feels like to keep going when a goal takes longer than expected.",
+  "Speech and visuals combine to trace an emotional arc from doubt to renewed conviction.",
+  "A short, quiet meditation on why some goals are worth the wait.",
+  "On-screen text and visual pacing build a case for staying in motion.",
+  "A reframe: dreams don't have deadlines, even when it feels that way.",
+  "A closing note on persistence, built entirely from what's shown and said in the clip.",
+];
 
-export const DEMO_ANALYSIS: VideoAnalysis = {
-  outputs,
-  concepts: [
-    { label: "Founder monologue — instructional tone", category: "speech", confidence: 96 },
-    { label: "Screen recording: analytics dashboard", category: "visual", confidence: 94 },
-    { label: "On-screen text overlay — \"Q1 Goals\"", category: "visual", confidence: 91 },
-    { label: "Hand gestures during key points", category: "visual", confidence: 87 },
-    { label: "Topic: product-led growth frameworks", category: "context", confidence: 98 },
-    { label: "Pacing: moderate, segment-based", category: "context", confidence: 89 },
-    { label: "Environment: modern office / desk setup", category: "visual", confidence: 85 },
-    { label: "Call-to-action implied at outro", category: "speech", confidence: 82 },
-  ],
-};
+const DEMO_HASHTAG_SETS = [
+  ["#Motivation", "#Dreams", "#Mindset", "#PersonalGrowth", "#KeepGoing"],
+  ["#MotivationTok", "#DreamBig", "#MindsetShift", "#Inspirational", "#SelfGrowth"],
+  ["#POV", "#DreamLife", "#MainCharacterEnergy", "#HealingJourney", "#Inspiration"],
+  ["#Resilience", "#LifeMotivation", "#KeepBelieving", "#MindsetMatters", "#ShortFormVideo"],
+  ["#Perseverance", "#GoalSetting", "#NeverGiveUp", "#GrowthMindset", "#Shorts"],
+  ["#EmotionalArc", "#Storytelling", "#CreatorTools", "#ClipContext", "#AMD"],
+  ["#QuietMotivation", "#StillHere", "#OneMoreTry", "#KeepMoving", "#Purpose"],
+  ["#OnScreenText", "#VisualStorytelling", "#MotivationalShort", "#Reflection", "#Growth"],
+  ["#NoExpiration", "#Patience", "#TrustTheProcess", "#DreamsDontDie", "#Inspiration"],
+  ["#ShortFilm", "#Persistence", "#RealTalk", "#KeepGoing", "#ClipContext"],
+];
 
-export function getAnalysisForStyle(style: CaptionStyle) {
-  return DEMO_ANALYSIS.outputs[style];
+function buildRankings(count: number): RankedCandidate[] {
+  return Array.from({ length: count }, (_, index) => ({
+    id: index + 1,
+    rank: index + 1,
+    score: 96 - index * 3,
+    reason:
+      index === 0
+        ? "Strongest contextual grounding and hook among the pool."
+        : "Grounded in VideoContext with slightly less distinctive framing.",
+  }));
 }
 
-export function buildExportPayload(
-  style: CaptionStyle,
-  fileName: string | null,
-) {
-  const output = DEMO_ANALYSIS.outputs[style];
-  return {
-    fileName: fileName ?? "video",
-    style,
-    generatedAt: new Date().toISOString(),
-    ...output,
-    aiUnderstanding: DEMO_ANALYSIS.concepts,
-  };
-}
+export const DEMO_RESULT: PipelineResult = {
+  job_id: "demo",
+  video_context: {
+    topic: "Persisting through a difficult personal goal",
+    content_type: "Motivational short-form video",
+    core_message: "A dream can remain possible even after disappointment.",
+    multimodal_summary:
+      "Speech about a dream remaining possible is paired with visible on-screen text (\"this is my ultimate dream\", \"I believe it's yours too\"), silhouetted indoor scenes, and a closing mountain-valley shot.",
+  },
+  generated_content: {
+    titles: DEMO_TITLES.map((text, index) => ({ id: index + 1, text })),
+    descriptions: DEMO_DESCRIPTIONS.map((text, index) => ({ id: index + 1, text })),
+    hashtags: DEMO_HASHTAG_SETS.map((tags, index) => ({ id: index + 1, tags })),
+  },
+  rankings: {
+    titles: buildRankings(10),
+    descriptions: buildRankings(10),
+    hashtags: buildRankings(10),
+  },
+};

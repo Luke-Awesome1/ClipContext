@@ -5,14 +5,27 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronDown, FileVideo, Upload } from "lucide-react";
 import { useVideoSession } from "@/context/VideoSessionContext";
+import { createJob, ApiError } from "@/lib/api";
 import SectionReveal from "@/components/ui/SectionReveal";
 
 const ACCEPTED = ["video/mp4", "video/quicktime", "video/webm"];
 const ACCEPTED_EXT = "MP4, MOV, WEBM";
 
+const YOUTUBE_HANDLE_PATTERN =
+  /youtube\.com\/(?:@([^/?#]+)|channel\/([^/?#]+)|c\/([^/?#]+)|user\/([^/?#]+))/i;
+
+function extractCreatorHandle(channelUrl: string): string {
+  const trimmed = channelUrl.trim();
+  if (!trimmed) return "";
+  const match = trimmed.match(YOUTUBE_HANDLE_PATTERN);
+  if (!match) return "";
+  return match[1] ?? match[2] ?? match[3] ?? match[4] ?? "";
+}
+
 export default function UploadSection() {
   const router = useRouter();
-  const { setVideo, creatorContext, updateCreatorContext } = useVideoSession();
+  const { setVideo, setJob, creatorContext, updateCreatorContext } =
+    useVideoSession();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -21,6 +34,7 @@ export default function UploadSection() {
   const [creatorContextOpen, setCreatorContextOpen] = useState(false);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isValidYouTubeUrl = useMemo(() => {
     if (!creatorContext.youtubeChannelUrl.trim()) return true;
@@ -80,11 +94,40 @@ export default function UploadSection() {
     [handleFiles],
   );
 
-  const startProcessing = useCallback(() => {
-    if (!selectedFile) return;
-    setVideo(selectedFile);
-    router.push("/process");
-  }, [selectedFile, setVideo, router]);
+  const startProcessing = useCallback(async () => {
+    if (!selectedFile || isSubmitting) return;
+
+    if (creatorContext.useCreatorContext && !isValidYouTubeUrl) {
+      setError("Please enter a valid YouTube channel URL or disable creator context.");
+      return;
+    }
+
+    const creatorHandle = creatorContext.useCreatorContext
+      ? extractCreatorHandle(creatorContext.youtubeChannelUrl)
+      : "";
+
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const { job_id: jobId, status } = await createJob({
+        video: selectedFile,
+        creatorHandle,
+        platform: "youtube",
+      });
+
+      setVideo(selectedFile);
+      setJob(jobId, status);
+      router.push("/process");
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : "Could not reach the ClipContext backend. Is it running?";
+      setError(message);
+      setIsSubmitting(false);
+    }
+  }, [selectedFile, isSubmitting, creatorContext, isValidYouTubeUrl, setVideo, setJob, router]);
 
   return (
     <section id="upload" className="relative py-24 sm:py-32">
@@ -92,15 +135,16 @@ export default function UploadSection() {
 
       <div className="mx-auto max-w-3xl px-5 sm:px-8">
         <SectionReveal delay={0.04} className="mb-10 text-center">
-          <p className="mb-3 text-sm font-medium uppercase tracking-[0.24em] text-blue-400">
+          <p className="mb-3 text-sm font-medium uppercase tracking-[0.24em] text-[#365f53]">
             Get Started
           </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Upload your video
+          <h2 className="text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl">
+            Upload a short clip
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-base text-neutral-400">
-            Drop a clip between 30 seconds and 2 minutes. ClipContext handles the
-            rest.
+          <p className="mx-auto mt-4 max-w-lg text-base text-neutral-600">
+            Drop a 30 second to 2 minute video. ClipContext will validate it,
+            extract speech, sample sparse frames, and prepare grounded
+            publishing candidates.
           </p>
         </SectionReveal>
 
@@ -122,10 +166,10 @@ export default function UploadSection() {
             setDragging(false);
           }}
           onDrop={onDrop}
-          className={`group relative cursor-pointer rounded-[1.75rem] border border-dashed p-10 transition-all duration-300 sm:p-14 ${
+          className={`group relative cursor-pointer rounded-lg border border-dashed p-10 transition-all duration-300 sm:p-14 ${
             dragging
-              ? "border-blue-400/60 bg-blue-500/[0.08] shadow-[0_0_70px_rgba(91,140,255,0.2)]"
-              : "border-white/[0.12] bg-white/[0.02] hover:border-blue-400/40 hover:bg-white/[0.04] hover:shadow-[0_0_48px_rgba(91,140,255,0.12)]"
+              ? "border-[#365f53]/60 bg-[#365f53]/[0.06] shadow-sm"
+              : "border-neutral-300 bg-white/60 hover:border-[#365f53]/35 hover:bg-white"
           }`}
           onClick={() => inputRef.current?.click()}
           role="button"
@@ -145,22 +189,20 @@ export default function UploadSection() {
             onChange={(e) => handleFiles(e.target.files)}
           />
 
-          <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-b from-blue-500/0 to-blue-500/0 opacity-0 transition-opacity duration-500 group-hover:from-blue-500/[0.04] group-hover:to-transparent group-hover:opacity-100" />
-
           <div className="relative flex flex-col items-center text-center">
             <motion.div
               animate={dragging ? { y: [0, -3, 0], scale: [1, 1.02, 1] } : { y: 0, scale: 1 }}
               transition={{ duration: 0.45, ease: "easeInOut" }}
               className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border transition-all duration-300 ${
                 dragging
-                  ? "border-blue-400/40 bg-blue-500/15 text-blue-300"
-                  : "border-white/[0.08] bg-white/[0.04] text-neutral-400 group-hover:border-blue-400/30 group-hover:text-blue-400"
+                  ? "border-[#365f53]/40 bg-[#365f53]/10 text-[#365f53]"
+                  : "border-neutral-200 bg-white text-neutral-500 group-hover:border-[#365f53]/30 group-hover:text-[#365f53]"
               }`}
             >
               <Upload size={28} strokeWidth={1.5} />
             </motion.div>
 
-            <p className="text-lg font-medium text-white">
+            <p className="text-lg font-medium text-neutral-950">
               {fileName ? fileName : "Drag and drop your video here"}
             </p>
             <p className="mt-2 text-sm text-neutral-500">
@@ -175,7 +217,7 @@ export default function UploadSection() {
                 e.stopPropagation();
                 inputRef.current?.click();
               }}
-              className="mt-8 inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-blue-400/30 hover:bg-blue-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
+              className="mt-8 inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 backdrop-blur-sm transition-all duration-300 hover:border-[#365f53]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
             >
               <FileVideo size={16} />
               Browse Files
@@ -195,7 +237,7 @@ export default function UploadSection() {
                 WEBM
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="h-1 w-1 rounded-full bg-blue-500/60" />
+                <span className="h-1 w-1 rounded-full bg-[#365f53]/70" />
                 30 sec – 2 min
               </span>
             </div>
@@ -225,27 +267,28 @@ export default function UploadSection() {
             >
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={isSubmitting ? undefined : { scale: 1.02 }}
+                whileTap={isSubmitting ? undefined : { scale: 0.98 }}
                 onClick={startProcessing}
-                className="mx-auto flex items-center gap-2 rounded-full bg-blue-500 px-8 py-3.5 text-sm font-semibold text-white shadow-[0_0_32px_rgba(91,140,255,0.24)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-400 hover:shadow-[0_0_42px_rgba(91,140,255,0.32)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
+                disabled={isSubmitting}
+                className="mx-auto flex items-center gap-2 rounded-full bg-neutral-950 px-8 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#365f53] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:bg-neutral-950"
               >
-                Analyze with ClipContext
+                {isSubmitting ? "Uploading…" : "Analyze with ClipContext"}
                 <ArrowRight size={16} />
               </motion.button>
 
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mx-auto w-full max-w-2xl overflow-hidden rounded-[1.35rem] border border-white/[0.08] bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-xl"
+                className="mx-auto w-full max-w-2xl overflow-hidden rounded-lg border border-neutral-200 bg-white/70 shadow-sm backdrop-blur-xl"
               >
                 <button
                   type="button"
                   onClick={() => setCreatorContextOpen((v) => !v)}
-                  className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-medium text-white transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0C0F0F]"
+                  className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-medium text-neutral-950 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-base text-blue-300">✦</span>
+                    <span className="text-base text-[#365f53]">*</span>
                     <span>
                       <span className="block">Creator Context (Optional)</span>
                       <span className="mt-0.5 block text-xs font-normal text-neutral-400">
@@ -270,20 +313,20 @@ export default function UploadSection() {
                       transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="border-t border-white/[0.06] px-5 py-4">
-                        <label className="mb-2 block text-sm font-medium text-neutral-200" htmlFor="channel-url">
+                      <div className="border-t border-neutral-200 px-5 py-4">
+                        <label className="mb-2 block text-sm font-medium text-neutral-800" htmlFor="channel-url">
                           YouTube Channel URL
                         </label>
                         <motion.div
                           animate={{
                             boxShadow: isInputFocused
-                              ? "0 0 0 1px rgba(96, 165, 250, 0.35), 0 0 30px rgba(59, 130, 246, 0.12)"
-                              : "0 0 0 1px rgba(255,255,255,0.04)",
+                              ? "0 0 0 1px rgba(54, 95, 83, 0.35)"
+                              : "0 0 0 1px rgba(23,23,23,0.1)",
                             y: isInputFocused ? -1 : 0,
                             scale: isInputFocused ? 1.005 : 1,
                           }}
                           transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                          className="rounded-2xl border border-white/[0.08] bg-black/20 backdrop-blur-sm"
+                          className="rounded-lg border border-neutral-200 bg-white backdrop-blur-sm"
                         >
                           <input
                             id="channel-url"
@@ -293,7 +336,7 @@ export default function UploadSection() {
                             onFocus={() => setIsInputFocused(true)}
                             onBlur={() => setIsInputFocused(false)}
                             placeholder="https://youtube.com/@creator"
-                            className="w-full rounded-2xl bg-transparent px-3 py-3 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] placeholder:text-neutral-500 focus-visible:outline-none"
+                            className="w-full rounded-lg bg-transparent px-3 py-3 text-sm text-neutral-950 placeholder:text-neutral-500 focus-visible:outline-none"
                           />
                         </motion.div>
 
@@ -321,16 +364,16 @@ export default function UploadSection() {
                           )}
                         </AnimatePresence>
 
-                        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3 transition-all duration-200 hover:border-blue-400/20 hover:bg-white/[0.04]">
+                        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-neutral-200 bg-[#faf9f6] px-3 py-3 transition-all duration-200 hover:border-[#365f53]/25 hover:bg-white">
                           <motion.input
                             type="checkbox"
                             checked={creatorContext.useCreatorContext}
                             onChange={(e) => updateCreatorContext({ useCreatorContext: e.target.checked })}
                             whileTap={{ scale: 0.95 }}
-                            className="mt-0.5 h-4 w-4 rounded border-white/20 bg-transparent accent-emerald-400"
+                            className="mt-0.5 h-4 w-4 rounded border-neutral-300 bg-transparent accent-[#365f53]"
                           />
                           <span className="flex-1">
-                            <span className="block text-sm font-medium text-white">
+                            <span className="block text-sm font-medium text-neutral-950">
                               Analyze my previous uploads to personalize results
                             </span>
                             <span className="mt-1 block text-sm leading-6 text-neutral-400">

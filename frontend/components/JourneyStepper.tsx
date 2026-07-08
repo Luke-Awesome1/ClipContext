@@ -34,7 +34,7 @@ export default function JourneyStepper({ current }: JourneyStepperProps) {
             {index > 0 && (
               <div
                 className={`mx-2 hidden h-px w-8 sm:block md:w-12 ${
-                  isComplete ? "bg-blue-400/50" : "bg-white/[0.08]"
+                  isComplete ? "bg-[#365f53]/50" : "bg-neutral-200"
                 }`}
               />
             )}
@@ -43,22 +43,22 @@ export default function JourneyStepper({ current }: JourneyStepperProps) {
                 whileHover={{ scale: 1.02 }}
                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition sm:text-sm ${
                   isCurrent
-                    ? "border-blue-400/25 bg-blue-500/15 text-blue-300 shadow-[0_0_24px_rgba(91,140,255,0.12)]"
+                    ? "border-[#365f53]/25 bg-[#365f53]/10 text-[#365f53] shadow-sm"
                     : isComplete
-                      ? "border-white/[0.06] bg-white/[0.04] text-neutral-400 hover:border-white/10 hover:text-white"
-                      : "border-white/[0.05] bg-white/[0.02] text-neutral-600"
+                      ? "border-neutral-200 bg-white/70 text-neutral-600 hover:border-neutral-300 hover:text-neutral-950"
+                      : "border-neutral-200 bg-white/50 text-neutral-500"
                 }`}
               >
                 {isComplete ? (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#365f53]/10 text-[#365f53]">
                     <Check size={10} strokeWidth={3} />
                   </span>
                 ) : (
                   <span
                     className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] ${
                       isCurrent
-                        ? "bg-blue-500 text-white"
-                        : "bg-white/[0.06] text-neutral-500"
+                        ? "bg-[#365f53] text-white"
+                        : "bg-neutral-100 text-neutral-500"
                     }`}
                   >
                     {index + 1}

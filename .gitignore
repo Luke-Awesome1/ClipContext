@@ -1,20 +1,28 @@
+# Python
 .venv/
-.env
-
 __pycache__/
 *.pyc
+src/__pycache__/
+**/__pycache__/
 
+# Environment
+.env
+
+# OS
 .DS_Store
 
+# Runtime video/audio/frame artifacts (content-addressed, regenerated per run)
 data/videos/*
-data/frames/*
+!data/videos/.gitkeep
 data/audio/*
+!data/audio/.gitkeep
+data/frames/*
+!data/frames/.gitkeep
 
+# Pipeline runtime output (regenerated per job)
 outputs/
 
-*.json
-
-!frontend/package.json
-!frontend/package-lock.json
-!frontend/tsconfig.json
-!package.json
+# Node / frontend
+frontend/node_modules/
+frontend/.next/
+frontend/next-env.d.ts

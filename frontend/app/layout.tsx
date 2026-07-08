@@ -14,9 +14,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClipContext — Understand Every Video",
+  title: "ClipContext — Sparse Video Context",
   description:
-    "Multimodal AI that generates captions from speech and visuals. Create better content with context-aware understanding.",
+    "Sparse multimodal video analysis that generates grounded titles, descriptions, and hashtag candidates.",
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#0C0F0F] text-white">
+      <body className="min-h-full flex flex-col bg-[#f6f5f2] text-neutral-950">
         <Providers>{children}</Providers>
       </body>
     </html>
