@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -9,13 +9,16 @@ import {
   Download,
   Check,
   Loader2,
+  Plus,
   Sparkles,
+  X,
 } from "lucide-react";
 import CaptionTabs, { type CandidatePool } from "@/components/CaptionTabs";
 import AIUnderstandingCard from "@/components/AIUnderstandingCard";
 import VideoPreview from "@/components/VideoPreview";
-import WorkspacePrompt from "@/components/WorkspacePrompt";
+import SaveArtifactPanel from "@/components/SaveArtifactPanel";
 import ConnectedPlatformsPanel from "@/components/ConnectedPlatformsPanel";
+import YouTubeUploadPanel from "@/components/YouTubeUploadPanel";
 import type {
   HashtagCandidate,
   PipelineResult,
@@ -23,6 +26,31 @@ import type {
   TextCandidate,
 } from "@/types/video";
 import SectionReveal from "@/components/ui/SectionReveal";
+
+interface StoredSelection {
+  titleId: number;
+  descriptionId: number;
+  hashtagId: number;
+  editedTitle?: string;
+  editedDescription?: string;
+  editedHashtags?: string[];
+}
+
+function selectionStorageKey(jobId: string): string {
+  return `clipcontext:selection:${jobId}`;
+}
+
+function readStoredSelection(jobId: string): StoredSelection | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.sessionStorage.getItem(selectionStorageKey(jobId));
+    if (!raw) return null;
+    return JSON.parse(raw) as StoredSelection;
+  } catch {
+    return null;
+  }
+}
 
 interface ResultsPanelProps {
   videoUrl: string | null;
@@ -68,6 +96,13 @@ export default function ResultsPanel({
   const [selectedDescriptionId, setSelectedDescriptionId] = useState<number | null>(null);
   const [selectedHashtagId, setSelectedHashtagId] = useState<number | null>(null);
 
+  // The user can freely edit the selected candidate's text/tags before
+  // upload — these hold the editable working copy, seeded from whichever
+  // candidate is selected but independent of it once edited.
+  const [editedTitle, setEditedTitle] = useState("");
+  const [editedDescription, setEditedDescription] = useState("");
+  const [editedHashtags, setEditedHashtags] = useState<string[]>([]);
+
   const rankedTitles = useMemo(
     () => (result ? sortByRank(result.generated_content.titles, result.rankings.titles) : []),
     [result],
@@ -87,42 +122,125 @@ export default function ResultsPanel({
     [result],
   );
 
+  // OAuth for "Connect YouTube" navigates away from this page and back.
+  // Selection state is component-local (useState), so without this it would
+  // reset to the top-ranked candidates on return — restore whatever the
+  // user had picked for this job before persisting the current pick below.
+  const storedSelection = result && !isDemo ? readStoredSelection(result.job_id) : null;
+
   useEffect(() => {
     if (rankedTitles.length && selectedTitleId === null) {
-      setSelectedTitleId(rankedTitles[0].id);
+      const stored = storedSelection?.titleId;
+      const isValid = stored !== undefined && rankedTitles.some((t) => t.id === stored);
+      setSelectedTitleId(isValid ? (stored as number) : rankedTitles[0].id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rankedTitles, selectedTitleId]);
 
   useEffect(() => {
     if (rankedDescriptions.length && selectedDescriptionId === null) {
-      setSelectedDescriptionId(rankedDescriptions[0].id);
+      const stored = storedSelection?.descriptionId;
+      const isValid = stored !== undefined && rankedDescriptions.some((d) => d.id === stored);
+      setSelectedDescriptionId(isValid ? (stored as number) : rankedDescriptions[0].id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rankedDescriptions, selectedDescriptionId]);
 
   useEffect(() => {
     if (rankedHashtags.length && selectedHashtagId === null) {
-      setSelectedHashtagId(rankedHashtags[0].id);
+      const stored = storedSelection?.hashtagId;
+      const isValid = stored !== undefined && rankedHashtags.some((h) => h.id === stored);
+      setSelectedHashtagId(isValid ? (stored as number) : rankedHashtags[0].id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rankedHashtags, selectedHashtagId]);
 
-  const selectedTitle = rankedTitles.find((t) => t.id === selectedTitleId);
-  const selectedDescription = rankedDescriptions.find((d) => d.id === selectedDescriptionId);
-  const selectedHashtags = rankedHashtags.find((h) => h.id === selectedHashtagId);
+  // Seed the editable working copy from whichever candidate is selected.
+  // Switching to a different candidate resets edits to that candidate's
+  // text; a restored (post-OAuth-redirect) edit takes priority once, on
+  // the render where its id first matches.
+  useEffect(() => {
+    if (selectedTitleId === null) return;
+    const candidate = rankedTitles.find((t) => t.id === selectedTitleId);
+    if (!candidate) return;
+
+    const stored = storedSelection;
+    setEditedTitle(
+      stored && stored.titleId === selectedTitleId && stored.editedTitle !== undefined
+        ? stored.editedTitle
+        : candidate.text,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTitleId]);
+
+  useEffect(() => {
+    if (selectedDescriptionId === null) return;
+    const candidate = rankedDescriptions.find((d) => d.id === selectedDescriptionId);
+    if (!candidate) return;
+
+    const stored = storedSelection;
+    setEditedDescription(
+      stored &&
+        stored.descriptionId === selectedDescriptionId &&
+        stored.editedDescription !== undefined
+        ? stored.editedDescription
+        : candidate.text,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDescriptionId]);
+
+  useEffect(() => {
+    if (selectedHashtagId === null) return;
+    const candidate = rankedHashtags.find((h) => h.id === selectedHashtagId);
+    if (!candidate) return;
+
+    const stored = storedSelection;
+    setEditedHashtags(
+      stored && stored.hashtagId === selectedHashtagId && stored.editedHashtags !== undefined
+        ? stored.editedHashtags
+        : [...candidate.tags],
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedHashtagId]);
+
+  useEffect(() => {
+    if (
+      !result ||
+      isDemo ||
+      selectedTitleId === null ||
+      selectedDescriptionId === null ||
+      selectedHashtagId === null
+    ) {
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      selectionStorageKey(result.job_id),
+      JSON.stringify({
+        titleId: selectedTitleId,
+        descriptionId: selectedDescriptionId,
+        hashtagId: selectedHashtagId,
+        editedTitle,
+        editedDescription,
+        editedHashtags,
+      }),
+    );
+  }, [result, isDemo, selectedTitleId, selectedDescriptionId, selectedHashtagId]);
 
   const copyAll = useCallback(async () => {
     const text = [
-      `Title: ${selectedTitle?.text ?? ""}`,
+      `Title: ${editedTitle}`,
       "",
       "Description:",
-      selectedDescription?.text ?? "",
+      editedDescription,
       "",
-      `Hashtags: ${(selectedHashtags?.tags ?? []).join(" ")}`,
+      `Hashtags: ${editedHashtags.join(" ")}`,
     ].join("\n");
 
     await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [selectedTitle, selectedDescription, selectedHashtags]);
+  }, [editedTitle, editedDescription, editedHashtags]);
 
   const handleExport = useCallback(() => {
     if (!result) return;
@@ -132,9 +250,9 @@ export default function ResultsPanel({
       jobId: result.job_id,
       generatedAt: new Date().toISOString(),
       selection: {
-        title: selectedTitle?.text,
-        description: selectedDescription?.text,
-        hashtags: selectedHashtags?.tags,
+        title: editedTitle,
+        description: editedDescription,
+        hashtags: editedHashtags,
       },
       result,
     };
@@ -148,7 +266,7 @@ export default function ResultsPanel({
     anchor.download = `clipcontext-${(fileName ?? "export").replace(/\.[^.]+$/, "")}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
-  }, [result, fileName, selectedTitle, selectedDescription, selectedHashtags]);
+  }, [result, fileName, editedTitle, editedDescription, editedHashtags]);
 
   if (error) {
     return (
@@ -200,7 +318,14 @@ export default function ResultsPanel({
           </motion.div>
 
           <AIUnderstandingCard videoContext={result.video_context} />
-          <WorkspacePrompt />
+          <SaveArtifactPanel
+            jobId={!isDemo && result ? result.job_id : null}
+            videoDisplayName={fileName}
+            selectedTitleId={selectedTitleId}
+            selectedDescriptionId={selectedDescriptionId}
+            selectedHashtagId={selectedHashtagId}
+            isDemo={isDemo}
+          />
         </div>
 
         <div className="space-y-5">
@@ -264,29 +389,18 @@ export default function ResultsPanel({
             </AnimatePresence>
 
             <div className="mt-6 space-y-4 border-t border-neutral-200 pt-6">
-              <SelectionSummary
+              <EditableField
                 label="Selected Title"
-                value={selectedTitle?.text ?? ""}
+                value={editedTitle}
+                onChange={setEditedTitle}
               />
-              <SelectionSummary
+              <EditableField
                 label="Selected Description"
-                value={selectedDescription?.text ?? ""}
+                value={editedDescription}
+                onChange={setEditedDescription}
+                multiline
               />
-              <div>
-                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-                  Selected Hashtags
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(selectedHashtags?.tags ?? []).map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-[#365f53]"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <EditableHashtags tags={editedHashtags} onChange={setEditedHashtags} />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3 border-t border-neutral-200 pt-6">
@@ -304,6 +418,16 @@ export default function ResultsPanel({
               />
             </div>
           </motion.div>
+
+          <Suspense fallback={null}>
+            <YouTubeUploadPanel
+              jobId={!isDemo && result ? result.job_id : null}
+              jobComplete={!isDemo}
+              title={editedTitle}
+              description={editedDescription}
+              hashtags={editedHashtags}
+            />
+          </Suspense>
 
           <ConnectedPlatformsPanel />
         </div>
@@ -360,13 +484,115 @@ function CandidateRow<T extends TextCandidate | HashtagCandidate>({
   );
 }
 
-function SelectionSummary({ label, value }: { label: string; value: string }) {
+function EditableField({
+  label,
+  value,
+  onChange,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  multiline?: boolean;
+}) {
   return (
-    <div className="rounded-lg border border-neutral-200 bg-[#faf9f6] p-4">
+    <div className="rounded-lg border border-neutral-200 bg-[#faf9f6] p-4 transition-colors focus-within:border-[#365f53]/40 focus-within:bg-white">
       <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
         {label}
       </p>
-      <p className="text-sm leading-relaxed text-neutral-800">{value}</p>
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          className="w-full resize-none bg-transparent text-sm leading-relaxed text-neutral-800 focus-visible:outline-none"
+        />
+      ) : (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-transparent text-sm leading-relaxed text-neutral-800 focus-visible:outline-none"
+        />
+      )}
+    </div>
+  );
+}
+
+function EditableHashtags({
+  tags,
+  onChange,
+}: {
+  tags: string[];
+  onChange: (tags: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const addTag = () => {
+    const cleaned = draft.trim();
+    if (!cleaned) return;
+
+    const normalized = cleaned.startsWith("#") ? cleaned : `#${cleaned}`;
+    if (tags.some((tag) => tag.toLowerCase() === normalized.toLowerCase())) {
+      setDraft("");
+      return;
+    }
+
+    onChange([...tags, normalized]);
+    setDraft("");
+  };
+
+  const removeTag = (tag: string) => {
+    onChange(tags.filter((t) => t !== tag));
+  };
+
+  return (
+    <div>
+      <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+        Selected Hashtags
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-[#365f53]"
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => removeTag(tag)}
+              aria-label={`Remove ${tag}`}
+              className="text-neutral-400 transition-colors hover:text-red-500"
+            >
+              <X size={12} />
+            </button>
+          </span>
+        ))}
+
+        <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-neutral-300 bg-transparent px-2.5 py-1.5">
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addTag();
+              }
+            }}
+            placeholder="Add hashtag"
+            className="w-24 bg-transparent text-xs text-neutral-700 placeholder:text-neutral-400 focus-visible:outline-none"
+          />
+          <button
+            type="button"
+            onClick={addTag}
+            aria-label="Add hashtag"
+            className="text-neutral-400 transition-colors hover:text-[#365f53]"
+          >
+            <Plus size={12} />
+          </button>
+        </span>
+      </div>
     </div>
   );
 }

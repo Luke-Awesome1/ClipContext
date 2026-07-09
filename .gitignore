@@ -8,6 +8,11 @@ src/__pycache__/
 # Environment
 .env
 
+# Firebase Admin service-account credentials — never commit these.
+firebase-service-account*.json
+*firebase-adminsdk*.json
+serviceAccountKey.json
+
 # OS
 .DS_Store
 
@@ -26,3 +31,6 @@ outputs/
 frontend/node_modules/
 frontend/.next/
 frontend/next-env.d.ts
+
+#clipcontex firebase admin sdk json
+clipcontext-ecfaa-firebase-adminsdk-1k0q9-7e3f5c6b8d.json

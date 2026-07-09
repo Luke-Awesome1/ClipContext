@@ -94,15 +94,17 @@ export default function UploadSection() {
     [handleFiles],
   );
 
+  const hasChannelUrl = creatorContext.youtubeChannelUrl.trim().length > 0;
+
   const startProcessing = useCallback(async () => {
     if (!selectedFile || isSubmitting) return;
 
-    if (creatorContext.useCreatorContext && !isValidYouTubeUrl) {
-      setError("Please enter a valid YouTube channel URL or disable creator context.");
+    if (hasChannelUrl && !isValidYouTubeUrl) {
+      setError("Please enter a valid YouTube channel URL, or clear the field to skip it.");
       return;
     }
 
-    const creatorHandle = creatorContext.useCreatorContext
+    const creatorHandle = hasChannelUrl
       ? extractCreatorHandle(creatorContext.youtubeChannelUrl)
       : "";
 
@@ -359,28 +361,12 @@ export default function UploadSection() {
                               exit={{ opacity: 0, y: -4 }}
                               className="mt-3 text-sm leading-6 text-neutral-400"
                             >
-                              Allow ClipContext to analyze your previous 50 YouTube uploads to understand your writing style, tone, structure and publishing patterns. This helps generate titles, descriptions and hashtags that feel more authentic to your content.
+                              {hasChannelUrl
+                                ? "ClipContext will analyze your previous 50 YouTube uploads to personalize titles, descriptions, and hashtags to your style."
+                                : "Optional — paste your channel URL and ClipContext will analyze your previous 50 uploads to personalize results. Leave empty to use only this video and current trends."}
                             </motion.p>
                           )}
                         </AnimatePresence>
-
-                        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-lg border border-neutral-200 bg-[#faf9f6] px-3 py-3 transition-all duration-200 hover:border-[#365f53]/25 hover:bg-white">
-                          <motion.input
-                            type="checkbox"
-                            checked={creatorContext.useCreatorContext}
-                            onChange={(e) => updateCreatorContext({ useCreatorContext: e.target.checked })}
-                            whileTap={{ scale: 0.95 }}
-                            className="mt-0.5 h-4 w-4 rounded border-neutral-300 bg-transparent accent-[#365f53]"
-                          />
-                          <span className="flex-1">
-                            <span className="block text-sm font-medium text-neutral-950">
-                              Analyze my previous uploads to personalize results
-                            </span>
-                            <span className="mt-1 block text-sm leading-6 text-neutral-400">
-                              This is completely optional. If left empty, ClipContext will still generate results using only your uploaded video and current niche trends.
-                            </span>
-                          </span>
-                        </label>
                       </div>
                     </motion.div>
                   )}

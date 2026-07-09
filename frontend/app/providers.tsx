@@ -1,7 +1,12 @@
 "use client";
 
+import { AuthProvider } from "@/context/AuthContext";
 import { VideoSessionProvider } from "@/context/VideoSessionContext";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return <VideoSessionProvider>{children}</VideoSessionProvider>;
+  return (
+    <AuthProvider>
+      <VideoSessionProvider>{children}</VideoSessionProvider>
+    </AuthProvider>
+  );
 }

@@ -10,8 +10,6 @@ import {
 } from "react";
 import type { CreatorContext, JobStatus } from "@/types/video";
 
-type WorkspaceMode = "guest" | "workspace";
-
 const JOB_ID_KEY = "clipcontext:jobId";
 const FILE_NAME_KEY = "clipcontext:fileName";
 const CREATOR_CONTEXT_KEY = "clipcontext:creatorContext";
@@ -23,14 +21,10 @@ interface VideoSessionContextValue {
   hasSession: boolean;
   jobId: string | null;
   jobStatus: JobStatus | null;
-  isAuthenticated: boolean;
-  workspaceMode: WorkspaceMode;
   creatorContext: CreatorContext;
   setVideo: (file: File) => void;
   startDemo: () => void;
   clearSession: () => void;
-  continueWithoutWorkspace: () => void;
-  createFreeWorkspace: () => void;
   updateCreatorContext: (updates: Partial<CreatorContext>) => void;
   clearCreatorContext: () => void;
   setJob: (jobId: string, status: JobStatus) => void;
@@ -48,13 +42,10 @@ export function VideoSessionProvider({ children }: { children: React.ReactNode }
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDemo, setIsDemo] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("guest");
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatusState] = useState<JobStatus | null>(null);
   const [creatorContext, setCreatorContext] = useState<CreatorContext>({
     youtubeChannelUrl: "",
-    useCreatorContext: false,
   });
   const [hydrated, setHydrated] = useState(false);
 
@@ -118,16 +109,6 @@ export function VideoSessionProvider({ children }: { children: React.ReactNode }
     window.sessionStorage.removeItem(FILE_NAME_KEY);
   }, []);
 
-  const continueWithoutWorkspace = useCallback(() => {
-    setIsAuthenticated(false);
-    setWorkspaceMode("guest");
-  }, []);
-
-  const createFreeWorkspace = useCallback(() => {
-    setIsAuthenticated(true);
-    setWorkspaceMode("workspace");
-  }, []);
-
   const updateCreatorContext = useCallback((updates: Partial<CreatorContext>) => {
     setCreatorContext((prev) => {
       const next = { ...prev, ...updates };
@@ -137,7 +118,7 @@ export function VideoSessionProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const clearCreatorContext = useCallback(() => {
-    setCreatorContext({ youtubeChannelUrl: "", useCreatorContext: false });
+    setCreatorContext({ youtubeChannelUrl: "" });
     window.sessionStorage.removeItem(CREATOR_CONTEXT_KEY);
   }, []);
 
@@ -159,14 +140,10 @@ export function VideoSessionProvider({ children }: { children: React.ReactNode }
       hasSession: hydrated && Boolean(videoUrl || isDemo || jobId),
       jobId,
       jobStatus,
-      isAuthenticated,
-      workspaceMode,
       creatorContext,
       setVideo,
       startDemo,
       clearSession,
-      continueWithoutWorkspace,
-      createFreeWorkspace,
       updateCreatorContext,
       clearCreatorContext,
       setJob,
@@ -179,14 +156,10 @@ export function VideoSessionProvider({ children }: { children: React.ReactNode }
       hydrated,
       jobId,
       jobStatus,
-      isAuthenticated,
-      workspaceMode,
       creatorContext,
       setVideo,
       startDemo,
       clearSession,
-      continueWithoutWorkspace,
-      createFreeWorkspace,
       updateCreatorContext,
       clearCreatorContext,
       setJob,

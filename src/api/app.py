@@ -7,7 +7,9 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.artifact_routes import router as artifact_router
 from src.api.routes import router
+from src.api.youtube_routes import router as youtube_router
 from src.config import get_allowed_origins, validate_environment
 
 
@@ -29,6 +31,8 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(router)
+    app.include_router(youtube_router)
+    app.include_router(artifact_router)
 
     return app
 

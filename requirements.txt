@@ -19,6 +19,13 @@ isodate
 pandas
 scikit-learn
 
+# YouTube OAuth (Connect with YouTube / upload)
+google-auth
+google-auth-oauthlib
+
+# ClipContext accounts (Firebase Authentication + Firestore artifacts)
+firebase-admin
+
 # API server
 fastapi
 uvicorn[standard]

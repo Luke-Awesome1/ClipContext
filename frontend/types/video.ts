@@ -109,5 +109,4 @@ export interface JobCreateResponse {
 
 export interface CreatorContext {
   youtubeChannelUrl: string;
-  useCreatorContext: boolean;
 }

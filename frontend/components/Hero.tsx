@@ -3,36 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
 import { useVideoSession } from "@/context/VideoSessionContext";
+import CaptionTabs, { type CandidatePool } from "@/components/CaptionTabs";
 
-const captionStyles = ["Professional", "Sarcastic", "Tech Humour", "Relatable"] as const;
+// Sample data shaped exactly like real PipelineResult output — this is a
+// preview of what ClipContext generates, not a design placeholder.
+const sampleTitles = [
+  "I Almost Quit. Then This Happened.",
+  "The Comeback Nobody Saw Coming",
+  "Why I Didn't Give Up (Yet)",
+];
 
-const stylePreviews: Record<
-  (typeof captionStyles)[number],
-  { title: string; caption: string }
-> = {
-  Professional: {
-    title: "The Dream You Hold Is Still Possible",
-    caption:
-      "A grounded motivational description built from transcript, visible text, emotional arc, and selected visual windows.",
-  },
-  Sarcastic: {
-    title: "Your Dream Called. It Still Has Audacity.",
-    caption:
-      "Disappointment arrived loudly. The video still makes the case that the dream deserves another round.",
-  },
-  "Tech Humour": {
-    title: "POV: the dream is still possible",
-    caption:
-      "city window, visible dream text, mountain shot, full main character recovery arc.",
-  },
-  Relatable: {
-    title: "The Dream Is Running Late, Not Cancelled",
-    caption: "A short-form caption that keeps the motivational point clear without inventing details.",
-  },
-};
+const sampleDescription =
+  "A short, honest look at the moment giving up felt easier than continuing — and why that moment passed.";
+
+const sampleHashtags = ["#Motivation", "#ComebackStory", "#NeverGiveUp", "#ShortFilm"];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -46,9 +33,7 @@ const fadeUp = {
 export default function Hero() {
   const router = useRouter();
   const { startDemo } = useVideoSession();
-  const [activeStyle, setActiveStyle] =
-    useState<(typeof captionStyles)[number]>("Professional");
-  const preview = stylePreviews[activeStyle];
+  const [activePool, setActivePool] = useState<CandidatePool>("titles");
 
   const handleWatchDemo = () => {
     startDemo();
@@ -70,7 +55,7 @@ export default function Hero() {
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/70 px-3 py-1.5 text-xs font-medium text-neutral-600 shadow-sm backdrop-blur-sm"
           >
             <Sparkles size={14} className="text-[#365f53]" />
-            Sparse multimodal analysis for creators
+            AI metadata for YouTube creators
           </motion.div>
 
           <motion.h1
@@ -78,11 +63,9 @@ export default function Hero() {
             variants={fadeUp}
             className="text-4xl font-semibold leading-[0.98] text-neutral-950 sm:text-5xl lg:text-[3.45rem]"
           >
-            Extract the useful context.
+            Your video already
             <br />
-            <span className="text-[#365f53]">
-              Generate grounded candidates.
-            </span>
+            <span className="text-[#365f53]">wrote the title.</span>
           </motion.h1>
 
           <motion.p
@@ -90,10 +73,8 @@ export default function Hero() {
             variants={fadeUp}
             className="mt-6 max-w-xl text-base leading-7 text-neutral-600 sm:text-lg"
           >
-            ClipContext validates a short video, transcribes speech locally,
-            selects sparse temporal frames, builds a canonical VideoContext,
-            then generates title, description, and hashtag candidates that stay
-            tied to the evidence.
+            Upload a clip. Get ranked titles, descriptions, and hashtags —
+            grounded in what&apos;s actually said and shown.
           </motion.p>
 
           <motion.div
@@ -153,42 +134,71 @@ export default function Hero() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {captionStyles.map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => setActiveStyle(style)}
-                    aria-pressed={activeStyle === style}
-                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white ${
-                      activeStyle === style
-                        ? "bg-[#365f53]/10 text-[#365f53] ring-1 ring-[#365f53]/25"
-                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-950"
-                    }`}
-                  >
-                    {style}
-                  </button>
-                ))}
+              <div>
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+                  What ClipContext outputs
+                </p>
+                <CaptionTabs active={activePool} onChange={setActivePool} size="sm" />
               </div>
 
-              <div className="space-y-3 rounded-lg border border-neutral-200 bg-[#faf9f6] p-4 shadow-sm">
-                <div>
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-                    Generated Title Candidate
-                  </p>
-                  <p className="text-sm font-semibold leading-snug text-neutral-950">
-                    {preview.title}
-                  </p>
-                </div>
-                <div className="h-px bg-neutral-200" />
-                <div>
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-                    Description Preview
-                  </p>
-                  <p className="text-sm leading-relaxed text-neutral-600">
-                    {preview.caption}
-                  </p>
-                </div>
+              <div className="rounded-lg border border-neutral-200 bg-[#faf9f6] p-4 shadow-sm">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activePool}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    {activePool === "titles" && (
+                      <div className="space-y-2">
+                        {sampleTitles.map((titleText, index) => (
+                          <div
+                            key={titleText}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2.5"
+                          >
+                            <span className="text-sm font-medium leading-snug text-neutral-950">
+                              {titleText}
+                            </span>
+                            {index === 0 ? (
+                              <span className="shrink-0 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                                Top Ranked
+                              </span>
+                            ) : (
+                              <span className="shrink-0 rounded-md bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+                                #{index + 1}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {activePool === "descriptions" && (
+                      <div>
+                        <p className="mb-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+                          Top Ranked Description
+                        </p>
+                        <p className="text-sm leading-relaxed text-neutral-700">
+                          {sampleDescription}
+                        </p>
+                      </div>
+                    )}
+
+                    {activePool === "hashtags" && (
+                      <div className="flex flex-wrap gap-2">
+                        {sampleHashtags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-[#365f53]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>

@@ -72,6 +72,24 @@ def upload_path(job_id: str, original_filename: str) -> Path:
     return UPLOADS_DIR / safe_upload_filename(job_id, original_filename)
 
 
+def resolve_upload_video_path(job_id: str) -> Path | None:
+    """Locate the original uploaded video for a job already known to exist.
+
+    Callers must validate the job_id against the job registry first — this
+    only globs the uploads directory, it does not itself authenticate the
+    job_id. Uploaded files are always named "<job_id><extension>" (see
+    safe_upload_filename), so this never traverses outside UPLOADS_DIR.
+    """
+    if not UPLOADS_DIR.exists():
+        return None
+
+    for candidate in sorted(UPLOADS_DIR.glob(f"{job_id}.*")):
+        if candidate.suffix.lower() in ALLOWED_VIDEO_EXTENSIONS:
+            return candidate
+
+    return None
+
+
 def cache_dir(video_hash: str) -> Path:
     path = CACHE_ROOT / video_hash
     path.mkdir(parents=True, exist_ok=True)

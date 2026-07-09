@@ -2,19 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { FolderOpen, LogOut, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/context/AuthContext";
+import AccountControl from "@/components/AccountControl";
+import AuthPromptModal from "@/components/AuthPromptModal";
 
 const navLinks = [
+  { label: "Upload", href: "#upload" },
   { label: "Features", href: "#features" },
   { label: "Pipeline", href: "#pipeline" },
   { label: "Technology", href: "#technology" },
-  { label: "Upload", href: "#upload" },
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [mobileAuthIntent, setMobileAuthIntent] = useState<"login" | "signup" | null>(null);
+  const { isAuthenticated, loading, logout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -64,22 +69,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden items-center gap-5 md:flex">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-neutral-600 transition-colors duration-300 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
-          >
-            Log In
-          </Link>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Link
-              href="/signup"
-              className="inline-flex items-center rounded-full bg-neutral-950 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:bg-[#365f53] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
-            >
-              Get Started
-            </Link>
-          </motion.div>
-        </div>
+        <AccountControl />
 
         <button
           type="button"
@@ -112,26 +102,65 @@ export default function Navbar() {
                   {item.label}
                 </Link>
               ))}
-              <div className="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4">
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-3 text-center text-neutral-700 transition hover:bg-neutral-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
-                >
-                  Log In
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={() => setOpen(false)}
-                  className="rounded-full bg-neutral-950 py-3 text-center text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
-                >
-                  Get Started
-                </Link>
-              </div>
+
+              {!loading && (
+                <div className="mt-4 flex flex-col gap-1 border-t border-neutral-200 pt-4">
+                  {isAuthenticated ? (
+                    <>
+                      <Link
+                        href="/artifacts"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 rounded-lg px-3 py-3 text-base font-medium text-neutral-800 transition hover:bg-neutral-200/60"
+                      >
+                        <FolderOpen size={16} />
+                        My Artifacts
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpen(false);
+                          logout();
+                        }}
+                        className="flex items-center gap-2 rounded-lg px-3 py-3 text-left text-base font-medium text-neutral-800 transition hover:bg-neutral-200/60"
+                      >
+                        <LogOut size={16} />
+                        Log Out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setMobileAuthIntent("login")}
+                        className="rounded-lg px-3 py-3 text-center text-neutral-700 transition hover:bg-neutral-200/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
+                      >
+                        Log In
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMobileAuthIntent("signup")}
+                        className="rounded-full bg-neutral-950 py-3 text-center text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
+                      >
+                        Get Started
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AuthPromptModal
+        open={mobileAuthIntent !== null}
+        title={
+          mobileAuthIntent === "signup" ? "Create your ClipContext account" : "Log in to ClipContext"
+        }
+        description="Use Google to continue — this also creates your account on first sign-in."
+        onClose={() => setMobileAuthIntent(null)}
+        onSuccess={() => setOpen(false)}
+      />
     </header>
   );
 }

@@ -3,8 +3,10 @@
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, PlugZap, Sparkles } from "lucide-react";
 
+// YouTube has a real "Connect with YouTube" integration — see
+// YouTubeUploadPanel. These remaining platforms are placeholders for
+// future OAuth hooks.
 const platforms = [
-  { name: "YouTube", status: "Connected", tone: "text-red-400" },
   { name: "Instagram", status: "Connected", tone: "text-pink-400" },
   { name: "TikTok", status: "Ready", tone: "text-[#365f53]" },
   { name: "LinkedIn", status: "Pending", tone: "text-slate-400" },
