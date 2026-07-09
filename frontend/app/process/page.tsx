@@ -41,11 +41,10 @@ export default function ProcessPage() {
       <PageTransition>
         <main className="min-h-screen bg-[#f6f5f2] pt-24 pb-20 text-neutral-950">
           <StudioNavbar />
-          <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="relative mx-auto max-w-3xl px-5 sm:px-8">
             <JourneyStepper current="processing" />
             <ProcessingPanel
               currentStage="completed"
-              progress={100}
               message="Demo mode: showing sample output."
               error={null}
             />
@@ -64,30 +63,25 @@ export default function ProcessPage() {
           <div className="absolute left-1/2 top-0 h-[360px] w-[560px] -translate-x-1/2 bg-white/45 blur-[120px]" />
         </div>
 
-        <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="relative mx-auto max-w-3xl px-5 sm:px-8">
           <JourneyStepper current="processing" />
 
-          <div className="grid items-start gap-12 lg:grid-cols-2">
-            <ProcessingPanel
-              currentStage={jobStatus?.stage ?? "queued"}
-              progress={jobStatus?.progress ?? 0}
-              message={jobStatus?.message ?? "Connecting to ClipContext..."}
-              error={jobStatus?.status === "failed" ? jobStatus.error : error}
+          <div className="mx-auto mb-10 max-w-md rounded-lg border border-neutral-200 bg-white/70 p-4 shadow-sm backdrop-blur-xl">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">
+              Source Video
+            </p>
+            <VideoPreview
+              videoUrl={videoUrl}
+              fileName={fileName}
+              isDemo={isDemo}
             />
-
-            <div className="hidden lg:block">
-              <div className="sticky top-28 rounded-lg border border-neutral-200 bg-white/70 p-4 shadow-sm backdrop-blur-xl">
-                <p className="mb-3 text-xs font-medium uppercase tracking-wider text-neutral-500">
-                  Source Video
-                </p>
-                <VideoPreview
-                  videoUrl={videoUrl}
-                  fileName={fileName}
-                  isDemo={isDemo}
-                />
-              </div>
-            </div>
           </div>
+
+          <ProcessingPanel
+            currentStage={jobStatus?.stage ?? "queued"}
+            message={jobStatus?.message ?? "Connecting to ClipContext..."}
+            error={jobStatus?.status === "failed" ? jobStatus.error : error}
+          />
         </div>
       </main>
     </PageTransition>

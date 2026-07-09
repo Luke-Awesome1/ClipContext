@@ -12,10 +12,7 @@ export default function StudioNavbar() {
           href="/"
           className="rounded-full px-2 py-1 text-lg font-semibold tracking-tight text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
         >
-          ClipContext{" "}
-          <span className="text-[#365f53]">
-            AI
-          </span>
+          Clip<span className="text-[#365f53]">Context</span>
         </Link>
 
         <div className="flex items-center gap-3">

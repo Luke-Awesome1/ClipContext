@@ -25,10 +25,7 @@ export default function Footer() {
         <SectionReveal delay={0.04} className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-1">
             <Link href="/" className="text-lg font-semibold text-neutral-950">
-              ClipContext{" "}
-              <span className="text-[#365f53]">
-                AI
-              </span>
+              Clip<span className="text-[#365f53]">Context</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-neutral-500">
               Sparse multimodal context for video creators. Analyze fewer

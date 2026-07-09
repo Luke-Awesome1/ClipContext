@@ -256,11 +256,11 @@ export default function YouTubeUploadPanel({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-lg border border-neutral-200 bg-white/70 p-6 shadow-sm backdrop-blur-xl"
+      className="flex h-full flex-col rounded-2xl border border-red-500/20 bg-gradient-to-br from-[#fdf1f1] to-[#fbe6e6] p-6 shadow-sm sm:p-8"
     >
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-neutral-950">YouTube</p>
+          <p className="text-base font-semibold text-neutral-950">YouTube</p>
           <p className="text-sm text-neutral-600">
             Upload the original video to your channel.
           </p>
@@ -282,8 +282,8 @@ export default function YouTubeUploadPanel({
           Checking YouTube connection…
         </div>
       ) : connection?.connected ? (
-        <div className="space-y-5">
-          <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-[#faf9f6] px-3 py-3">
+        <div className="flex flex-1 flex-col space-y-5">
+          <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-3">
             <div className="flex items-center gap-3">
               {connection.channel_thumbnail_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -293,7 +293,7 @@ export default function YouTubeUploadPanel({
                   className="h-9 w-9 rounded-full border border-neutral-200 object-cover"
                 />
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-white text-sm font-semibold text-neutral-700">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 bg-[#faf9f6] text-sm font-semibold text-neutral-700">
                   {(connection.channel_title ?? "Y").charAt(0)}
                 </div>
               )}
@@ -349,7 +349,7 @@ export default function YouTubeUploadPanel({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="mt-auto space-y-3">
           <p className="text-sm text-neutral-600">
             Connect your YouTube account to publish this video directly to
             your channel once you&apos;ve chosen a title, description, and
@@ -357,7 +357,7 @@ export default function YouTubeUploadPanel({
           </p>
           <a
             href={getYouTubeConnectUrl()}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
+            className="inline-flex items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#fbe6e6]"
           >
             <PlugZap size={16} />
             Connect YouTube

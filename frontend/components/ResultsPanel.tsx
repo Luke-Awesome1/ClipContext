@@ -17,7 +17,6 @@ import CaptionTabs, { type CandidatePool } from "@/components/CaptionTabs";
 import AIUnderstandingCard from "@/components/AIUnderstandingCard";
 import VideoPreview from "@/components/VideoPreview";
 import SaveArtifactPanel from "@/components/SaveArtifactPanel";
-import ConnectedPlatformsPanel from "@/components/ConnectedPlatformsPanel";
 import YouTubeUploadPanel from "@/components/YouTubeUploadPanel";
 import type {
   HashtagCandidate,
@@ -65,6 +64,8 @@ function rankOf(rankings: RankedCandidate[], id: number): RankedCandidate | unde
   return rankings.find((entry) => entry.id === id);
 }
 
+const TOP_N_CANDIDATES = 5;
+
 function sortByRank<T extends { id: number }>(
   candidates: T[],
   rankings: RankedCandidate[],
@@ -79,7 +80,8 @@ function sortByRank<T extends { id: number }>(
         reason: ranking?.reason ?? "",
       };
     })
-    .sort((a, b) => a.rank - b.rank);
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, TOP_N_CANDIDATES);
 }
 
 export default function ResultsPanel({
@@ -318,14 +320,6 @@ export default function ResultsPanel({
           </motion.div>
 
           <AIUnderstandingCard videoContext={result.video_context} />
-          <SaveArtifactPanel
-            jobId={!isDemo && result ? result.job_id : null}
-            videoDisplayName={fileName}
-            selectedTitleId={selectedTitleId}
-            selectedDescriptionId={selectedDescriptionId}
-            selectedHashtagId={selectedHashtagId}
-            isDemo={isDemo}
-          />
         </div>
 
         <div className="space-y-5">
@@ -418,19 +412,27 @@ export default function ResultsPanel({
               />
             </div>
           </motion.div>
-
-          <Suspense fallback={null}>
-            <YouTubeUploadPanel
-              jobId={!isDemo && result ? result.job_id : null}
-              jobComplete={!isDemo}
-              title={editedTitle}
-              description={editedDescription}
-              hashtags={editedHashtags}
-            />
-          </Suspense>
-
-          <ConnectedPlatformsPanel />
         </div>
+      </div>
+
+      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <SaveArtifactPanel
+          jobId={!isDemo && result ? result.job_id : null}
+          videoDisplayName={fileName}
+          selectedTitleId={selectedTitleId}
+          selectedDescriptionId={selectedDescriptionId}
+          selectedHashtagId={selectedHashtagId}
+          isDemo={isDemo}
+        />
+        <Suspense fallback={null}>
+          <YouTubeUploadPanel
+            jobId={!isDemo && result ? result.job_id : null}
+            jobComplete={!isDemo}
+            title={editedTitle}
+            description={editedDescription}
+            hashtags={editedHashtags}
+          />
+        </Suspense>
       </div>
     </div>
   );

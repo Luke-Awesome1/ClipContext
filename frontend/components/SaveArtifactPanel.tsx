@@ -97,14 +97,14 @@ export default function SaveArtifactPanel({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-lg border border-neutral-200 bg-white/70 p-6 shadow-sm backdrop-blur-xl"
+      className="flex h-full flex-col rounded-2xl border border-[#365f53]/25 bg-gradient-to-br from-[#eef4f0] to-[#e2ece5] p-6 shadow-sm sm:p-8"
     >
       <div className="mb-5 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#365f53]/20 bg-[#365f53]/10 text-[#365f53]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#365f53] text-white">
           <Sparkles size={18} />
         </div>
         <div>
-          <p className="text-sm font-semibold text-neutral-950">Save this generation</p>
+          <p className="text-base font-semibold text-neutral-950">Save this generation</p>
           <p className="text-sm text-neutral-600">
             Keep the generated titles, descriptions, hashtags, and AI analysis.
           </p>
@@ -112,7 +112,7 @@ export default function SaveArtifactPanel({
       </div>
 
       {isDemo && (
-        <p className="mb-4 text-xs text-amber-600">
+        <p className="mb-4 text-xs text-amber-700">
           Demo results can&apos;t be saved — try it with a real upload.
         </p>
       )}
@@ -122,26 +122,26 @@ export default function SaveArtifactPanel({
       )}
 
       {saveState === "saved" && savedArtifactId ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700">
+        <div className="mt-auto flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-4 py-2.5 text-sm font-semibold text-emerald-700">
             <Check size={16} />
             Saved
           </span>
           <Link
             href="/artifacts"
-            className="inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#365f53]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
+            className="inline-flex items-center gap-2 rounded-full border border-[#365f53]/25 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#365f53]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#e2ece5]"
           >
             <FolderOpen size={16} />
             My Artifacts
           </Link>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-3">
+        <div className="mt-auto flex flex-wrap gap-3">
           <button
             type="button"
             onClick={handleSaveClick}
             disabled={!canSave || saveState === "saving"}
-            className="inline-flex items-center gap-2 rounded-full bg-neutral-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#365f53] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6f5f2]"
+            className="inline-flex items-center gap-2 rounded-full bg-[#365f53] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2c4c42] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#365f53]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#e2ece5]"
           >
             {saveState === "saving" ? (
               <>
