@@ -47,6 +47,7 @@ export default function ProcessPage() {
               currentStage="completed"
               message="Demo mode: showing sample output."
               error={null}
+              progress={100}
             />
           </div>
         </main>
@@ -81,6 +82,7 @@ export default function ProcessPage() {
             currentStage={jobStatus?.stage ?? "queued"}
             message={jobStatus?.message ?? "Connecting to ClipContext..."}
             error={jobStatus?.status === "failed" ? jobStatus.error : error}
+            progress={jobStatus?.progress ?? 0}
           />
         </div>
       </main>
