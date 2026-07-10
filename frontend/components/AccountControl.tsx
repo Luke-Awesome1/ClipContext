@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { FolderOpen, LogOut } from "lucide-react";
@@ -15,6 +15,24 @@ export default function AccountControl() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [authIntent, setAuthIntent] = useState<"login" | "signup" | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // A "fixed inset-0" click-catcher would be trapped inside the header's
+  // own box when the header has backdrop-blur applied (see
+  // AuthPromptModal.tsx for the full explanation) — a document-level
+  // listener sidesteps that entirely.
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onPointerDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, [menuOpen]);
 
   if (loading) return null;
 
@@ -53,7 +71,7 @@ export default function AccountControl() {
   const initials = (user?.displayName ?? user?.email ?? "U").charAt(0).toUpperCase();
 
   return (
-    <div className="relative hidden md:block">
+    <div ref={menuRef} className="relative hidden md:block">
       <button
         type="button"
         onClick={() => setMenuOpen((v) => !v)}
@@ -75,36 +93,33 @@ export default function AccountControl() {
 
       <AnimatePresence>
         {menuOpen && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}
-              className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg"
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18 }}
+            className="absolute right-0 z-50 mt-2 w-48 overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-lg"
+          >
+            <Link
+              href="/artifacts"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-neutral-50"
             >
-              <Link
-                href="/artifacts"
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-700 transition-colors hover:bg-neutral-50"
-              >
-                <FolderOpen size={14} />
-                My Artifacts
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  logout();
-                }}
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-50"
-              >
-                <LogOut size={14} />
-                Log Out
-              </button>
-            </motion.div>
-          </>
+              <FolderOpen size={14} />
+              My Artifacts
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                logout();
+              }}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-neutral-700 transition-colors hover:bg-neutral-50"
+            >
+              <LogOut size={14} />
+              Log Out
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -25,6 +26,18 @@ export default function AuthPromptModal({
   const { loginWithGoogle, firebaseConfigured } = useAuth();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Portal this into document.body rather than rendering it in place: both
+  // Navbar and StudioNavbar's <header> use backdrop-blur, which (per the
+  // CSS spec) makes that header a new containing block for any
+  // position:fixed descendant — so without the portal, this modal's
+  // "fixed inset-0" centers inside the 64px-tall header instead of the
+  // viewport. document.body isn't available during SSR, hence the mount
+  // check.
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleContinue = async () => {
     setPending(true);
@@ -41,7 +54,9 @@ export default function AuthPromptModal({
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -103,6 +118,7 @@ export default function AuthPromptModal({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

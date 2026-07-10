@@ -218,13 +218,12 @@ range for that ceiling with a non-fused attention kernel, not evidence of a
 misconfiguration to keep chasing.
 
 At 72s per call, running both AMD-eligible stages live would add roughly
-2.5–4 minutes to a 2–5 minute demo. **Qwen2.5-7B-Instruct roughly halves
-the memory traffic per decode step**, which for this memory-bandwidth-bound
-single-stream workload should roughly double throughput (~25–30 tok/s,
-~35–40s per `content_generation` call) — still real GPU inference on a
-non-trivial model, just sized for a live demo instead of offline batch
-quality. `amd/README.md`'s benchmark commands below will be re-run against
-7B to confirm the real number once the server is restarted.
+2.5–4 minutes to a 2–5 minute demo. **Confirmed by a real
+`amd/benchmark_amd.py` run against `Qwen2.5-7B-Instruct`: 38.5s latency,
+1219 completion tokens, 31.6 tok/s** — 2.3x the 14B throughput, close to
+the back-of-envelope memory-bandwidth prediction. Still real GPU inference
+on a non-trivial 7B model, sized for a live demo instead of offline batch
+quality.
 
 An AWQ/GPTQ int4-quantized 14B build was considered and set aside for now:
 it could plausibly claim back more throughput than resizing to 7B, but
@@ -251,29 +250,68 @@ not needed for the run recorded above, capture succeeded cleanly.
 
 ## Network access
 
-**Not yet verified against the real notebook.** Before pointing the
-production backend at `AMD_VLLM_BASE_URL`, confirm from a terminal *outside*
-the notebook whether the notebook's port is directly reachable:
+**Confirmed on the allocated notebook: no direct public port.** The
+notebook sits behind an isolated internal proxy
+(`radeon-global.anruicloud.com`) with no raw external IP/hostname mapped to
+port 8000 or any other arbitrary TCP port — only Jupyter's own HTTP(S)
+proxy is exposed. `AMD_VLLM_BASE_URL` cannot point directly at the
+notebook; a tunnel is required for the deployed backend to reach it.
+
+**Chosen mechanism: Cloudflare Tunnel, quick-tunnel mode.** No Cloudflare
+account required — appropriate for a time-boxed hackathon demo rather than
+long-lived infrastructure, which matches what this actually is.
+
+On the notebook, in a new terminal/tmux session (separate from the one
+running vLLM):
 
 ```bash
-curl -m 5 http://<notebook-host>:8000/v1/models
+tmux new -s tunnel
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o cloudflared
+chmod +x cloudflared
+./cloudflared tunnel --url http://localhost:8000
 ```
 
-- If that succeeds, `AMD_VLLM_BASE_URL` can point directly at the notebook.
-- If it doesn't (most managed notebook environments only expose a Jupyter
-  proxy, not arbitrary TCP ports), the vLLM server needs a tunnel. Do not
-  install a random tunneling tool unprompted — if a tunnel is required,
-  the two reasonable options are:
-  - **Cloudflare Tunnel** (`cloudflared`) — no account required for a
-    temporary quick tunnel; ask before installing if you'd prefer a named,
-    authenticated tunnel instead.
-  - **ngrok** — requires an ngrok account/authtoken; only set this up if
-    you tell me to and provide the authtoken via ngrok's own config, never
-    pasted into chat.
-- Whichever mechanism is used, set `AMD_VLLM_API_KEY` and keep
-  `--api-key` set on the vLLM server (`amd/start_vllm.sh` already warns if
-  it's unset) — an exposed, unauthenticated GPU inference endpoint is a
-  cost and abuse risk. Never commit the tunnel URL or the API key.
+`cloudflared` prints a line like:
+
+```
+https://random-two-words.trycloudflare.com
+```
+
+That URL is a plain HTTPS reverse proxy to `localhost:8000` on the
+notebook — it does not add its own authentication layer, which is exactly
+why `AMD_VLLM_API_KEY` / `--api-key` on the vLLM server (already set in
+step 5 above) is the thing actually protecting this endpoint from
+unauthenticated use. Verify from *outside* the notebook (your own laptop,
+or the Railway backend once deployed) before wiring it in:
+
+```bash
+curl -m 5 https://random-two-words.trycloudflare.com/v1/models \
+  -H "Authorization: Bearer <AMD_VLLM_API_KEY>"
+```
+
+Then set on the backend (Railway, once deployed — see root `README.md`):
+
+```
+AMD_VLLM_BASE_URL=https://random-two-words.trycloudflare.com/v1
+AMD_VLLM_API_KEY=<same key the vLLM server was started with>
+AMD_VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct
+CONTENT_GENERATION_PROVIDER=amd_vllm
+CONTENT_GENERATION_FALLBACK_PROVIDER=fireworks
+```
+
+**Known tradeoffs of quick-tunnel mode**, both acceptable for a demo and
+worth knowing about:
+
+- The URL is ephemeral — it changes every time `cloudflared` restarts.
+  Start it well before the demo, keep that tmux session alive, and re-check
+  `GET /api/providers/status` on the deployed backend shortly before
+  presenting rather than assuming a URL set hours earlier is still live.
+- No SLA/uptime guarantee on a quick tunnel. If it drops mid-demo, that's
+  exactly the scenario `CONTENT_GENERATION_FALLBACK_PROVIDER=fireworks`
+  exists for — the pipeline keeps working, `provider_used` in `ai_audit`
+  just becomes `"fireworks"` for that run instead of `"amd_vllm"`, honestly.
+- Never commit the tunnel URL or `AMD_VLLM_API_KEY` to the repository —
+  both belong only in the backend host's environment-variable manager.
 
 ## Fallback and audit truthfulness
 

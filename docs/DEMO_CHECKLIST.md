@@ -6,14 +6,26 @@ YouTube OAuth Testing-mode restrictions are both stateful.
 
 ## Before you start
 
-- [ ] AMD notebook is running with `amd/start_vllm.sh` started and
-      `amd/smoke_test.py` passed (see `amd/README.md`).
-- [ ] Backend `.env` has `AMD_VLLM_BASE_URL` / `AMD_VLLM_MODEL` set and
-      `CONTENT_GENERATION_PROVIDER=amd_vllm` (and/or
-      `DISCRIMINATOR_PROVIDER=amd_vllm`), backend restarted after setting
-      them.
+- [ ] AMD notebook: `amd/start_vllm.sh` running with
+      `AMD_VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct` in its own `tmux` session
+      (survives a dropped terminal); `amd/smoke_test.py` passed against
+      `localhost:8000` (see `amd/README.md`).
+- [ ] AMD notebook: `cloudflared tunnel --url http://localhost:8000`
+      running in a second `tmux` session — the notebook has no direct
+      public port, so this tunnel is required. Note the current
+      `https://*.trycloudflare.com` URL; it's ephemeral and changes on
+      every `cloudflared` restart, so re-check it's still the one the
+      backend has, not a stale one from an earlier session.
+- [ ] Backend host (Railway) has `AMD_VLLM_BASE_URL` set to that tunnel
+      URL + `/v1`, `AMD_VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct`,
+      `AMD_VLLM_API_KEY` matching what the vLLM server was started with,
+      and `CONTENT_GENERATION_PROVIDER=amd_vllm` — restarted after setting
+      them. `DISCRIMINATOR_PROVIDER` intentionally left unset (defaults to
+      Fireworks) to keep the demo to one AMD wait.
 - [ ] `curl <backend>/api/providers/status` shows
-      `"reachable": true` for `amd_vllm`.
+      `"reachable": true` for `amd_vllm` — check this shortly before
+      presenting, not hours earlier, since both the notebook and the tunnel
+      are time-boxed.
 - [ ] The Google account you'll log in with is added as a Test user on the
       OAuth consent screen (required while it's in Testing mode).
 - [ ] A short (30s–2min) test video is ready locally.
