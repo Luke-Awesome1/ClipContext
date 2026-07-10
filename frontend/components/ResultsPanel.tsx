@@ -319,7 +319,7 @@ export default function ResultsPanel({
             <VideoPreview videoUrl={videoUrl} fileName={fileName} isDemo={isDemo} />
           </motion.div>
 
-          <AIUnderstandingCard videoContext={result.video_context} />
+          <AIUnderstandingCard videoContext={result.video_context} aiAudit={result.ai_audit} />
         </div>
 
         <div className="space-y-5">

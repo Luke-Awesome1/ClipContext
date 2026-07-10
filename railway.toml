@@ -1,0 +1,15 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# The job registry (src/api/jobs.py) and YouTube session/token stores are
+# in-memory — see README.md "Known limitations". Running more than one
+# replica would split job/session state across processes with no shared
+# backing store, so job polling and YouTube reconnects would randomly hit
+# the wrong instance. Keep this at 1 unless shared state is implemented.
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+healthcheckPath = "/health"
+healthcheckTimeout = 100

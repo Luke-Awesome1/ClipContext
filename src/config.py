@@ -137,3 +137,18 @@ def get_firebase_service_account_json() -> str | None:
 
 def get_google_application_credentials() -> str | None:
     return os.getenv("GOOGLE_APPLICATION_CREDENTIALS") or None
+
+
+# --- AMD GPU inference (ROCm + vLLM) ---
+#
+# Optional at process startup, same pattern as the other integrations above:
+# ClipContext defaults CONTENT_GENERATION_PROVIDER / DISCRIMINATOR_PROVIDER
+# to "fireworks" (see src/ai/providers/registry.py), so the app runs with
+# zero AMD configuration. Setting either to "amd_vllm" points that stage at
+# an OpenAI-compatible vLLM server running on the AMD hackathon GPU
+# (see amd/README.md); the browser never talks to this endpoint directly,
+# only this backend process does. Env vars (AMD_VLLM_BASE_URL,
+# AMD_VLLM_MODEL, AMD_VLLM_API_KEY, AMD_VLLM_TIMEOUT_SECONDS) are read
+# directly in src/ai/providers/amd_vllm.py, matching how FIREWORKS_API_KEY
+# and GEMINI_API_KEY are read directly in their own client modules rather
+# than through this file.

@@ -1,0 +1,13 @@
+# torch, vllm, and ROCm userspace libraries are preinstalled in the
+# "ROCm 7.2 + vLLM 0.16.0 + PyTorch 2.9" AMD AI Notebook image. Do not pip
+# install a different torch/vllm build on top of it — that's the most
+# common way to break ROCm GPU visibility in a preconfigured notebook.
+#
+# Nothing in amd/ needs anything beyond that image's own preinstalled
+# packages: verify_rocm.py and start_vllm.sh only import torch/vllm and
+# call subprocess tools already on PATH (rocminfo, rocm-smi, df, free).
+#
+# smoke_test.py and benchmark_amd.py are meant to run from the repo's
+# normal backend Python environment (the one with requirements.txt
+# installed, which already includes `openai` and `pydantic`) — not
+# necessarily from inside the notebook.

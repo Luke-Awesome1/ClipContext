@@ -1,14 +1,16 @@
 import json
+import os
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
-from src.ai.fireworks.client import (
-    MINMAX_ID,
-    get_fireworks_client,
-)
+from src.ai.fireworks.client import MINMAX_ID
+from src.ai.providers.orchestrator import run_structured_stage
 from src.models.discriminator.schemas import DiscriminatorResult
 
+
+STAGE = "discriminator"
 
 CURRENT_DIR = Path(__file__).resolve().parent
 
@@ -137,9 +139,7 @@ def run_discriminator_audit(
     candidate_pools: dict,
     context_data: dict,
     benchmarks: dict,
-) -> DiscriminatorResult:
-    client = get_fireworks_client()
-
+) -> tuple[DiscriminatorResult, dict[str, Any]]:
     video_truth_digest = {
         "topic": context_data.get(
             "topic",
@@ -173,69 +173,28 @@ def run_discriminator_audit(
         "candidate_pools": candidate_pools,
     }
 
-    json_schema = DiscriminatorResult.model_json_schema()
-
-    response = client.chat.completions.create(
-        model=MINMAX_ID,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    load_system_instruction()
-                ),
-            },
-            {
-                "role": "user",
-                "content": (
-                    "Independently rank each candidate pool below "
-                    "and return the structured audit matrix:\n\n"
-                    + json.dumps(
-                        evaluation_package,
-                        indent=2,
-                    )
-                ),
-            },
-        ],
+    result, audit = run_structured_stage(
+        stage=STAGE,
+        system_prompt=load_system_instruction(),
+        user_prompt=(
+            "Independently rank each candidate pool below "
+            "and return the structured audit matrix:\n\n"
+            + json.dumps(evaluation_package, indent=2)
+        ),
+        schema_model=DiscriminatorResult,
+        schema_name="DiscriminatorResult",
+        model_by_provider={
+            "fireworks": MINMAX_ID,
+            "amd_vllm": os.getenv("AMD_VLLM_MODEL"),
+        },
         temperature=0.1,
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "DiscriminatorResult",
-                "schema": json_schema,
-            },
-        },
-        extra_body={
-            "reasoning_effort": "low"
+        max_tokens=8000,
+        extra_params_by_provider={
+            "fireworks": {"extra_body": {"reasoning_effort": "low"}},
         },
     )
 
-    if not response.choices:
-        raise RuntimeError(
-            "Discriminator returned no choices"
-        )
-
-    raw_content = (
-        response
-        .choices[0]
-        .message
-        .content
-    )
-
-    if not raw_content:
-        raise RuntimeError(
-            "Discriminator returned empty content"
-        )
-
-    try:
-        return DiscriminatorResult.model_validate_json(
-            raw_content
-        )
-
-    except Exception as exc:
-        raise RuntimeError(
-            "Discriminator returned content that could not be "
-            "validated as DiscriminatorResult"
-        ) from exc
+    return result, audit
 
 
 def run_discriminator(
@@ -243,7 +202,7 @@ def run_discriminator(
     trends_path: Path,
     candidates_path: Path,
     output_path: Path,
-) -> DiscriminatorResult:
+) -> tuple[DiscriminatorResult, dict[str, Any]]:
     context_data, benchmarks = (
         load_validation_payloads(
             context_path=context_path,
@@ -255,7 +214,7 @@ def run_discriminator(
         candidates_path=candidates_path
     )
 
-    result = run_discriminator_audit(
+    result, audit = run_discriminator_audit(
         candidate_pools=candidate_pools,
         context_data=context_data,
         benchmarks=benchmarks,
@@ -282,4 +241,4 @@ def run_discriminator(
         f"{output_path}"
     )
 
-    return result
+    return result, audit

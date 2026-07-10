@@ -1,8 +1,9 @@
 import json
+import os
 from pathlib import Path
 from typing import Any
 
-from src.ai.fireworks.client import get_fireworks_client
+from src.ai.providers.orchestrator import run_structured_stage
 from src.models.generated_content import GeneratedContent
 from src.prompts.content_generation import (
     CONTENT_GENERATION_SYSTEM_PROMPT,
@@ -10,6 +11,8 @@ from src.prompts.content_generation import (
 
 
 DEFAULT_MODEL = "accounts/fireworks/routers/kimi-k2p6-turbo"
+
+STAGE = "content_generation"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -57,7 +60,15 @@ def generate_content(
     video_context_path: Path,
     syntax_path: Path,
     model: str = DEFAULT_MODEL,
-) -> GeneratedContent:
+) -> tuple[GeneratedContent, dict[str, Any]]:
+    """Returns (GeneratedContent, stage_audit_dict).
+
+    stage_audit_dict records which AI provider actually handled this call
+    (see src/ai/providers/orchestrator.py) — fireworks by default, or
+    amd_vllm when CONTENT_GENERATION_PROVIDER=amd_vllm is configured, with
+    truthful fallback if the configured provider is unreachable or returns
+    unusable output.
+    """
     video_context = load_json(
         video_context_path
     )
@@ -66,150 +77,27 @@ def generate_content(
         syntax_path
     )
 
-    client = get_fireworks_client()
-
-    json_schema = (
-        GeneratedContent.model_json_schema()
-    )
-
-    response = client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    CONTENT_GENERATION_SYSTEM_PROMPT
-                ),
-            },
-            {
-                "role": "user",
-                "content": build_generation_prompt(
-                    video_context=video_context,
-                    platform_syntax=(
-                        platform_syntax
-                    ),
-                ),
-            },
-        ],
-        response_format={
-            "type": "json_schema",
-            "json_schema": {
-                "name": "GeneratedContent",
-                "schema": json_schema,
-            },
+    generated_content, audit = run_structured_stage(
+        stage=STAGE,
+        system_prompt=CONTENT_GENERATION_SYSTEM_PROMPT,
+        user_prompt=build_generation_prompt(
+            video_context=video_context,
+            platform_syntax=platform_syntax,
+        ),
+        schema_model=GeneratedContent,
+        schema_name="GeneratedContent",
+        model_by_provider={
+            "fireworks": model,
+            "amd_vllm": os.getenv("AMD_VLLM_MODEL"),
         },
-        reasoning_effort="none",
         temperature=0.8,
         max_tokens=6000,
+        extra_params_by_provider={
+            "fireworks": {"reasoning_effort": "none"},
+        },
     )
 
-    choice = response.choices[0]
-    message = choice.message
-
-    raw_content = message.content
-
-    if not raw_content:
-        reasoning_content = getattr(
-            message,
-            "reasoning_content",
-            None,
-        )
-
-        print(
-            "\n"
-            "--- FIREWORKS EMPTY CONTENT DEBUG ---"
-        )
-
-        print(
-            f"finish_reason: "
-            f"{choice.finish_reason}"
-        )
-
-        print(
-            f"reasoning_content: "
-            f"{reasoning_content}"
-        )
-
-        print(
-            "--- END DEBUG ---"
-            "\n"
-        )
-
-        raise RuntimeError(
-            "Fireworks returned empty content "
-            "for content generation"
-        )
-
-    if choice.finish_reason == "length":
-        print(
-            "\n"
-            "--- FIREWORKS TRUNCATED CONTENT ---"
-        )
-
-        print(
-            raw_content
-        )
-
-        print(
-            "--- END TRUNCATED CONTENT ---"
-            "\n"
-        )
-
-        raise RuntimeError(
-            "Fireworks content generation "
-            "response was truncated."
-        )
-
-    try:
-        generated_content = (
-            GeneratedContent.model_validate_json(
-                raw_content
-            )
-        )
-
-    except Exception as exc:
-        print(
-            "\n"
-            "--- FIREWORKS RAW CONTENT START ---"
-        )
-
-        print(
-            raw_content
-        )
-
-        print(
-            "--- FIREWORKS RAW CONTENT END ---"
-            "\n"
-        )
-
-        reasoning_content = getattr(
-            message,
-            "reasoning_content",
-            None,
-        )
-
-        if reasoning_content:
-            print(
-                "\n"
-                "--- FIREWORKS REASONING START ---"
-            )
-
-            print(
-                reasoning_content
-            )
-
-            print(
-                "--- FIREWORKS REASONING END ---"
-                "\n"
-            )
-
-        raise RuntimeError(
-            "Fireworks returned content that "
-            "could not be validated as "
-            "GeneratedContent"
-        ) from exc
-
-    return generated_content
+    return generated_content, audit
 
 
 def save_generated_content(

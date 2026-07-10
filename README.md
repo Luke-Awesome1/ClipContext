@@ -27,8 +27,13 @@ Pipeline service (src/pipeline/runner.py) — the SAME function the CLI calls
       ├─ VideoContext generation (Fireworks Kimi)
       ├─ worldwide trend analysis (YouTube Data API + Fireworks MiniMax)
       ├─ creator trend analysis (optional — skipped if no handle given)
-      ├─ content generation: 10 titles / 10 descriptions / 10 hashtag sets
-      └─ discriminator: independently ranks each of the three pools
+      ├─ content generation: 10 titles / 10 descriptions / 10 hashtag sets ─┐
+      └─ discriminator: independently ranks each of the three pools ───────┤
+                                                                            │
+                              src/ai/providers/orchestrator.py ◀───────────┘
+                                            │
+                         fireworks (default) or amd_vllm — see "AMD GPU
+                         integration" below. Truthful fallback either way.
       ▼
 PipelineResult persisted to outputs/<job_id>/ and outputs/_cache/<video_hash>/
       ▼
@@ -53,12 +58,71 @@ Key design points:
 - **In-memory job registry.** `src/api/jobs.py` keeps job state in a
   lock-guarded dict, not a database. See [Known limitations](#known-limitations).
 
+## AMD GPU integration (ROCm + vLLM)
+
+Two of ClipContext's AI stages — **content generation** (10 titles / 10
+descriptions / 10 hashtag sets) and the **discriminator** (independent
+ranking of each pool) — are text-only, structured-JSON inference calls, and
+can run on an AMD GPU via an OpenAI-compatible [vLLM](https://github.com/vllm-project/vllm)
+server on [ROCm](https://rocm.docs.amd.com/), instead of (or as a fallback
+pair with) Fireworks. Visual understanding stays on Fireworks Kimi/Gemini —
+those stages take image input, and the AMD notebook serves a text model.
+
+```mermaid
+flowchart TD
+    Browser --> Frontend[Next.js Frontend]
+    Frontend --> Backend[FastAPI Backend]
+    Backend --> Pipeline[Video Pipeline: ffmpeg, Whisper, frame selection]
+    Backend --> Vision[Fireworks Kimi / Gemini vision]
+    Backend --> YT[YouTube Data API — trends]
+    Backend --> Orchestrator[src/ai/providers/orchestrator.py]
+    Orchestrator -->|content_generation / discriminator| AMD[AMD vLLM — OpenAI-compatible]
+    AMD --> ROCm[ROCm / HIP]
+    ROCm --> GPU[AMD GPU]
+    Orchestrator -->|fallback, or default| Fireworks[Fireworks — Kimi / MiniMax]
+    Backend --> Firebase[Firebase Admin / Firestore]
+    Backend --> OAuth[YouTube OAuth + Upload]
+```
+
+- **Provider abstraction**: `src/ai/providers/` — `base.py` (interface),
+  `fireworks_provider.py`, `amd_vllm.py`, `registry.py` (env-driven
+  selection), `orchestrator.py` (bounded repair retry + fallback + audit).
+- **Selection**: `CONTENT_GENERATION_PROVIDER` / `DISCRIMINATOR_PROVIDER`
+  (default `fireworks`), with `..._FALLBACK_PROVIDER` (default `fireworks`
+  when the primary isn't). Set either to `amd_vllm` to route that stage
+  through AMD; see `.env.example`.
+- **The browser never talks to AMD.** Only this backend does, via
+  `AMD_VLLM_BASE_URL` in its own environment.
+- **Truthful execution audit.** Every completed job's `PipelineResult`
+  includes `ai_audit`, one entry per AI stage recording
+  `provider_requested`, `provider_used`, `model`, `hardware`, `latency_ms`,
+  `fallback_used`, `fallback_reason` — also persisted to
+  `outputs/<job_id>/ai_provider_audit.json`. The frontend
+  (`AIUnderstandingCard.tsx`) only shows an "AMD GPU inference" badge when
+  `provider_used === "amd_vllm"` for that specific stage — never when it
+  fell back to Fireworks, and never based on `provider_requested` alone.
+- **Safe status endpoint**: `GET /api/providers/status` — which provider is
+  configured per stage and whether it's currently reachable, with no
+  secrets or endpoint URLs in the response.
+- **Setup, diagnostics, model selection, network access, and the
+  benchmark/smoke-test scripts** are all in [`amd/README.md`](amd/README.md)
+  — start there before touching AMD environment variables.
+- **The AMD notebook is hackathon GPU compute, not permanent public
+  hosting.** The portal describes the allocation as runtime-limited. The
+  public ClipContext deployment (below) works with zero AMD configuration;
+  `CONTENT_GENERATION_PROVIDER=amd_vllm` / `DISCRIMINATOR_PROVIDER=amd_vllm`
+  are only set in the backend's environment while the notebook is up for a
+  demo, and the pipeline falls back to Fireworks automatically otherwise.
+
 ## Repository structure
 
 ```
 main.py                    Thin CLI wrapper over the pipeline service
 requirements.txt           Backend Python dependencies
 Dockerfile                 Backend container image
+amd/                       AMD ROCm/vLLM inference service: start script,
+                           diagnostics, smoke test, representative benchmark
+                           (see amd/README.md)
 
 src/
   api/                     FastAPI app, routes, job registry, API schemas,
@@ -69,6 +133,11 @@ src/
   video/                   Local video validation, audio/frame extraction
   ai/                      Transcription, temporal alignment, context
                            building, content generation, Fireworks client
+  ai/providers/            AI provider abstraction — base interface,
+                           FireworksProvider, AmdVllmProvider, env-driven
+                           registry, and the orchestrator that runs a
+                           structured-output stage with bounded repair
+                           retry, truthful fallback, and audit metadata
   models/                  Pydantic schemas (VideoContext, GeneratedContent,
                            discriminator ranking)
   trends/                  Worldwide + creator YouTube trend analysis
@@ -537,11 +606,16 @@ Default Credentials are used automatically.
 ```bash
 make test    # pytest tests/ — paths, job registry, API validation, schemas,
              # the YouTube OAuth/session/upload suite (test_youtube_*.py),
-             # and the Firebase auth/artifact suite (test_auth_dependencies.py,
-             # test_artifact_api.py, test_firebase_admin.py)
-             # all external AI/YouTube/Firebase/Firestore calls are mocked;
-             # no real network calls, uploads, or Firestore writes in tests
+             # the Firebase auth/artifact suite (test_auth_dependencies.py,
+             # test_artifact_api.py, test_firebase_admin.py), and the AI
+             # provider abstraction (test_ai_providers.py, test_stage_wiring.py)
+             # — Fireworks AND AMD vLLM HTTP calls are both mocked; no real
+             # network calls, GPU, uploads, or Firestore writes in tests
 ```
+
+Real AMD hardware validation is separate and intentionally not part of
+`make test` — see [`amd/README.md`](amd/README.md) (`smoke_test.py`,
+`benchmark_amd.py`), which need an actual reachable vLLM server.
 
 The frontend build (`npm run build`) runs type-checking and linting as part
 of the Next.js build step.
@@ -671,6 +745,13 @@ before considering the feature launched.
   Both were left as-is (each presumably already validated against
   Fireworks) rather than guessed into alignment — verify against your
   Fireworks account before changing either.
+- **The AMD notebook allocation is runtime-limited, not permanent
+  infrastructure.** `CONTENT_GENERATION_PROVIDER=amd_vllm` /
+  `DISCRIMINATOR_PROVIDER=amd_vllm` should only be set in the backend's
+  environment while the notebook's vLLM server is actually running; the
+  pipeline falls back to Fireworks automatically and truthfully when it
+  isn't (see [AMD GPU integration](#amd-gpu-integration-rocm--vllm)), but a
+  demo relying on AMD execution needs the notebook up beforehand.
 
 ## Troubleshooting
 
@@ -699,3 +780,11 @@ before considering the feature launched.
 - **`auth/popup-blocked` or the sign-in popup does nothing** — the browser
   blocked the popup opened by `signInWithPopup`. Allow popups for the site
   and retry.
+- **A stage configured for `amd_vllm` always shows `provider_used:
+  "fireworks"` in `ai_audit`** — check `GET /api/providers/status` first;
+  if `reachable: false`, confirm the vLLM server is actually running on the
+  notebook (`amd/verify_rocm.py`, then `amd/smoke_test.py` from a machine
+  that can reach it) and that `AMD_VLLM_BASE_URL`/`AMD_VLLM_MODEL` in the
+  backend's `.env` match exactly. This is the pipeline behaving correctly
+  (truthful fallback), not a bug — see
+  [AMD GPU integration](#amd-gpu-integration-rocm--vllm).

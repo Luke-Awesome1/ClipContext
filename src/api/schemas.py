@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -30,3 +30,13 @@ class JobStatusResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: str
+
+
+class ProviderStatusResponse(BaseModel):
+    """Safe-to-expose AI provider configuration/reachability, keyed by
+    pipeline stage and by provider name. Never includes API keys, tokens,
+    or the AMD endpoint URL — see src/ai/providers/health.py.
+    """
+
+    stages: dict[str, Any]
+    providers: dict[str, Any]

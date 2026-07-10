@@ -72,4 +72,7 @@ export const DEMO_RESULT: PipelineResult = {
     descriptions: buildRankings(10),
     hashtags: buildRankings(10),
   },
+  // Demo mode never ran real inference, AMD or otherwise — no AMD
+  // indicator should render for it (see AIUnderstandingCard.tsx).
+  ai_audit: [],
 };

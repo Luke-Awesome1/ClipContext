@@ -25,6 +25,7 @@ from src.pipeline.schemas import (
     STAGE_PROGRESS,
     PipelineResult,
     PipelineStage,
+    StageAiAudit,
     VideoContextSummary,
 )
 from src.trends.trend_analyzer import run_creator_analysis
@@ -316,13 +317,17 @@ def run_pipeline(
         PipelineStage.CONTENT_GENERATION,
         "Generating titles, descriptions, and hashtags",
     )
+    ai_audit: list[StageAiAudit] = []
+
     try:
-        generated_content = generate_content(
+        generated_content, content_generation_audit = generate_content(
             video_context_path=paths["caption_context"],
             syntax_path=generation_syntax_path,
         )
     except (ValueError, RuntimeError) as exc:
         raise PipelineError(f"Content generation failed: {exc}") from exc
+
+    ai_audit.append(StageAiAudit(**content_generation_audit))
 
     save_generated_content(
         generated_content=generated_content,
@@ -335,7 +340,7 @@ def run_pipeline(
         "Ranking generated candidates",
     )
     try:
-        rankings = run_discriminator(
+        rankings, discriminator_audit = run_discriminator(
             context_path=paths["video_context"],
             trends_path=paths["w_trends"],
             candidates_path=paths["generated_content"],
@@ -344,6 +349,9 @@ def run_pipeline(
     except (ValueError, RuntimeError) as exc:
         raise PipelineError(f"Candidate ranking failed: {exc}") from exc
 
+    ai_audit.append(StageAiAudit(**discriminator_audit))
+    save_json([entry.model_dump() for entry in ai_audit], paths["ai_provider_audit"])
+
     _report(progress_callback, PipelineStage.COMPLETED, "Pipeline complete")
 
     return PipelineResult(
@@ -351,4 +359,5 @@ def run_pipeline(
         video_context=VideoContextSummary(**caption_context),
         generated_content=generated_content,
         rankings=rankings,
+        ai_audit=ai_audit,
     )

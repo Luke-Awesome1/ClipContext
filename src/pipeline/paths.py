@@ -137,4 +137,5 @@ def build_job_paths(job_id: str, video_hash: str) -> dict:
         "yt_syntax": syntax_directory / "yt_syntax.json",
         "generated_content": output_dir / "generated_content.json",
         "audit_report": output_dir / "audit_report.json",
+        "ai_provider_audit": output_dir / "ai_provider_audit.json",
     }

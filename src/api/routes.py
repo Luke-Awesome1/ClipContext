@@ -4,8 +4,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 
+from src.ai.providers.health import get_ai_provider_status
 from src.api.jobs import registry, start_job
-from src.api.schemas import HealthResponse, JobCreateResponse, JobStatusResponse
+from src.api.schemas import (
+    HealthResponse,
+    JobCreateResponse,
+    JobStatusResponse,
+    ProviderStatusResponse,
+)
 from src.config import get_max_upload_size_bytes
 from src.pipeline.paths import (
     ALLOWED_VIDEO_EXTENSIONS,
@@ -28,6 +34,17 @@ UPLOAD_CHUNK_SIZE = 1024 * 1024
 @router.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     return HealthResponse(status="ok")
+
+
+@router.get("/api/providers/status", response_model=ProviderStatusResponse)
+async def provider_status() -> ProviderStatusResponse:
+    """Which AI provider (fireworks / amd_vllm) is configured for each
+    stage, and whether it's currently reachable. Checking AMD vLLM
+    reachability makes a live request to the configured endpoint, so this
+    is kept separate from GET /health rather than slowing down liveness
+    checks.
+    """
+    return ProviderStatusResponse(**get_ai_provider_status())
 
 
 @router.post("/api/jobs", response_model=JobCreateResponse)

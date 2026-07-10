@@ -85,11 +85,23 @@ export interface VideoContextSummary {
   core_message: string;
 }
 
+export interface StageAiAudit {
+  stage: string;
+  provider_requested: string;
+  provider_used: string | null;
+  model: string | null;
+  hardware: string | null;
+  latency_ms: number | null;
+  fallback_used: boolean;
+  fallback_reason: string | null;
+}
+
 export interface PipelineResult {
   job_id: string;
   video_context: VideoContextSummary;
   generated_content: GeneratedContent;
   rankings: Rankings;
+  ai_audit: StageAiAudit[];
 }
 
 export interface JobStatusResponse {

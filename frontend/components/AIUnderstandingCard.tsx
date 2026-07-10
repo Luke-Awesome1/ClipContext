@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Brain, Eye, MessageSquare, Sparkles } from "lucide-react";
-import type { VideoContextSummary } from "@/types/video";
+import { Brain, Cpu, Eye, MessageSquare, Sparkles } from "lucide-react";
+import type { StageAiAudit, VideoContextSummary } from "@/types/video";
 
 interface AIUnderstandingCardProps {
   videoContext: VideoContextSummary;
+  aiAudit?: StageAiAudit[];
 }
 
 const FIELDS = [
@@ -15,7 +16,19 @@ const FIELDS = [
   { key: "multimodal_summary", label: "Multimodal Summary", icon: Brain },
 ] as const;
 
-export default function AIUnderstandingCard({ videoContext }: AIUnderstandingCardProps) {
+const STAGE_LABELS: Record<string, string> = {
+  content_generation: "Content generation",
+  discriminator: "Candidate ranking",
+};
+
+export default function AIUnderstandingCard({
+  videoContext,
+  aiAudit = [],
+}: AIUnderstandingCardProps) {
+  // Only ever surfaced when the orchestrator's audit says AMD actually
+  // handled the stage — never for a stage that fell back to Fireworks.
+  // See src/ai/providers/orchestrator.py.
+  const amdStages = aiAudit.filter((entry) => entry.provider_used === "amd_vllm");
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -59,6 +72,23 @@ export default function AIUnderstandingCard({ videoContext }: AIUnderstandingCar
           );
         })}
       </ul>
+
+      {amdStages.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-neutral-200 pt-4">
+          {amdStages.map((entry) => (
+            <span
+              key={entry.stage}
+              title={[entry.model, entry.hardware, entry.latency_ms ? `${Math.round(entry.latency_ms)}ms` : null]
+                .filter(Boolean)
+                .join(" · ")}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#365f53]/20 bg-[#365f53]/5 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-[#365f53]"
+            >
+              <Cpu size={11} strokeWidth={2} />
+              {STAGE_LABELS[entry.stage] ?? entry.stage}: AMD GPU inference
+            </span>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

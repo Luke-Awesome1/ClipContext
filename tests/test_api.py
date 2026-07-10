@@ -19,6 +19,19 @@ def test_health_endpoint(client):
     assert response.json() == {"status": "ok"}
 
 
+def test_provider_status_endpoint_defaults_to_fireworks_only(client):
+    response = client.get("/api/providers/status")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["stages"]["content_generation"]["provider_requested"] == "fireworks"
+    assert body["stages"]["discriminator"]["provider_requested"] == "fireworks"
+    # No stage is configured for AMD by default, so it must not appear —
+    # this also guarantees no live network call to an unconfigured AMD
+    # endpoint happens on a routine status check.
+    assert "amd_vllm" not in body["providers"]
+    assert body["providers"]["fireworks"]["configured"] is True
+
+
 def test_create_job_rejects_unsupported_extension(client):
     response = client.post(
         "/api/jobs",

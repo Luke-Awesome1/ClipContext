@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -47,8 +48,29 @@ class VideoContextSummary(BaseModel):
     core_message: str
 
 
+class StageAiAudit(BaseModel):
+    """Truthful execution record for one AI inference stage.
+
+    provider_used may differ from provider_requested when the requested
+    provider (e.g. amd_vllm) was unreachable or returned unusable output and
+    the pipeline fell back to another configured provider — see
+    src/ai/providers/orchestrator.py. The frontend must only show an "AMD
+    inference" indicator when provider_used == "amd_vllm".
+    """
+
+    stage: str
+    provider_requested: str
+    provider_used: Optional[str] = None
+    model: Optional[str] = None
+    hardware: Optional[str] = None
+    latency_ms: Optional[float] = None
+    fallback_used: bool = False
+    fallback_reason: Optional[str] = None
+
+
 class PipelineResult(BaseModel):
     job_id: str
     video_context: VideoContextSummary
     generated_content: GeneratedContent
     rankings: DiscriminatorResult
+    ai_audit: list[StageAiAudit] = []
