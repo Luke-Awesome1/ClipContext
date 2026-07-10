@@ -87,29 +87,35 @@ src/ai/providers/orchestrator.py   (run_structured_stage)
 src/ai/providers/amd_vllm.py  ──▶  AMD_VLLM_BASE_URL (OpenAI-compatible)
                                           │
                                           ▼
-                                  vLLM 0.16.0 (OpenAI-compatible server)
+                                  vLLM 0.16.1.dev0 (ROCm721 build)
                                           │
                                           ▼
-                                  PyTorch 2.9 / ROCm 7.2 / HIP
+                                  PyTorch 2.9.1 / ROCm 7.2.53211 / HIP
                                           │
                                           ▼
-                                     AMD GPU
+                          AMD Radeon PRO W7900-class GPU (gfx1100, 48GB VRAM)
 ```
 
 **Stages that run on AMD:** `content_generation` and `discriminator` — see
 [Why these two stages](#why-these-two-stages-and-not-vision).
 
-**The exact model running on AMD:** not finalized in this repository
-revision. Model selection intentionally waits for real
-`amd/verify_rocm.py` output from the allocated notebook (GPU model, VRAM,
-ROCm/PyTorch/vLLM versions actually loaded) rather than guessing — see
-`amd/README.md`'s [Model selection](../amd/README.md#model-selection)
-section for the exact evaluation criteria (VRAM vs. parameter count,
-vLLM/ROCm compatibility, gated-vs-open on Hugging Face, structured-output
-reliability, context window vs. the discriminator's larger prompt,
-generation latency). This document will be updated with the actual chosen
-model, and the real benchmark numbers from `amd/benchmark_amd.py`, once the
-notebook is running.
+**Real hardware, confirmed via `amd/verify_rocm.py` on the allocated
+notebook:** AMD Radeon PRO W7900-class GPU, `gfx1100` (RDNA3), 48 GiB VRAM,
+single card; ROCm/HIP 7.2.53211; PyTorch 2.9.1 (ROCm build); vLLM
+0.16.1.dev0 (ROCm721 build); ~93 GiB free disk; 503 GiB RAM.
+
+**The exact model running on AMD: `Qwen/Qwen2.5-14B-Instruct`.** Selected
+against the real numbers above, not guessed beforehand — see
+`amd/README.md`'s [Model selection](../amd/README.md#model-selection) for
+the full reasoning: ungated (no `HF_TOKEN`), ~29 GiB bf16 weights fit 48 GiB
+VRAM with ~19 GiB headroom for KV cache, fits the 93 GiB disk budget with
+margin (a 30B+ model's download-time peak usage would not have), a
+long-validated vLLM architecture on ROCm, strong structured-JSON
+instruction-following, and a 32K native context window far exceeding
+either stage's real prompt size (`MAX_MODEL_LEN=16384` caps KV cache
+allocation to what's actually used). Real benchmark numbers from
+`amd/benchmark_amd.py` will be added here once a full run against the live
+server completes.
 
 **Why these two stages, and not vision:** `content_generation` and
 `discriminator` are ClipContext's only text-only, structured-JSON AI

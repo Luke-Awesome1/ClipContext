@@ -91,42 +91,55 @@ notebook as production infrastructure it isn't. Instead:
    git clone <this-repo-url> clipcontext
    cd clipcontext
    ```
-4. Run the diagnostic script and confirm the GPU is actually visible:
+4. Run the diagnostic script and confirm the GPU is actually visible.
+   **Use the venv that actually has torch/vllm installed** — on the
+   allocated notebook this was `/opt/venv` (system `python`/`python3` on
+   `PATH` does not have them; check with `python3 -c "import vllm"` first
+   if you're on a different notebook instance):
    ```bash
-   python amd/verify_rocm.py
+   /opt/venv/bin/python amd/verify_rocm.py
    ```
    This must show a real GPU under `torch.cuda.get_device_name(0)` and a
    loaded `vllm` module before continuing. If it doesn't, stop and fix the
    notebook environment before starting the server — do not guess a model
    choice against an environment that can't see the GPU.
-5. Only after real GPU/VRAM numbers are known: pick a model (see
-   [Model selection](#model-selection)) and start the server:
+5. Start the server with the model already selected in
+   [Model selection](#model-selection):
    ```bash
-   export AMD_VLLM_MODEL="<chosen-model-id>"
+   source /opt/venv/bin/activate
+   export AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct"
+   export MAX_MODEL_LEN=16384
+   export GPU_MEMORY_UTILIZATION=0.88
    export AMD_VLLM_API_KEY="<a-random-string-you-generate>"   # recommended
    bash amd/start_vllm.sh
    ```
-6. From a machine that can reach the notebook (see
-   [Network access](#network-access)), confirm it actually serves usable
-   completions:
+   First start downloads ~29 GiB from Hugging Face — expect several minutes
+   depending on the notebook's outbound bandwidth. Watch for `Uvicorn
+   running on http://0.0.0.0:8000` before moving on.
+6. From the notebook's own terminal (a second one, since the first is
+   running the server in the foreground), confirm it serves usable
+   completions over localhost before worrying about external reachability:
    ```bash
-   AMD_VLLM_BASE_URL="http://<notebook-host>:8000/v1" \
-   AMD_VLLM_MODEL="<chosen-model-id>" \
+   AMD_VLLM_BASE_URL="http://localhost:8000/v1" \
+   AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct" \
    AMD_VLLM_API_KEY="<same-key>" \
-   python amd/smoke_test.py
+   /opt/venv/bin/python amd/smoke_test.py
    ```
 7. Run the representative ClipContext benchmark (same code path the real
-   pipeline uses):
+   pipeline uses), still over localhost:
    ```bash
-   AMD_VLLM_BASE_URL="http://<notebook-host>:8000/v1" \
-   AMD_VLLM_MODEL="<chosen-model-id>" \
+   AMD_VLLM_BASE_URL="http://localhost:8000/v1" \
+   AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct" \
    AMD_VLLM_API_KEY="<same-key>" \
-   python amd/benchmark_amd.py
+   /opt/venv/bin/python amd/benchmark_amd.py
    ```
-8. Point the real backend at it (repo root `.env`, **not** the notebook):
+8. Point the real backend at it (repo root `.env`, **not** the notebook —
+   see [Network access](#network-access) for how `<notebook-host-or-tunnel>`
+   gets resolved, since this notebook's port is not necessarily reachable
+   from outside as-is):
    ```
    AMD_VLLM_BASE_URL=http://<notebook-host-or-tunnel>:8000/v1
-   AMD_VLLM_MODEL=<chosen-model-id>
+   AMD_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
    AMD_VLLM_API_KEY=<same-key>
    CONTENT_GENERATION_PROVIDER=amd_vllm
    CONTENT_GENERATION_FALLBACK_PROVIDER=fireworks
@@ -143,25 +156,57 @@ the notebook itself — it's inference compute only.
 
 ## Model selection
 
-Not finalized in this repository revision — selecting a model **before**
-seeing real `amd/verify_rocm.py` output (GPU model, VRAM, vLLM/ROCm/PyTorch
-versions actually loaded) would be a guess, not an engineering decision.
-Once that output is available, the choice is evaluated against:
+**Finalized against real hardware diagnostics** from the allocated
+notebook (`amd/verify_rocm.py`):
 
-- available VRAM vs. model parameter count/precision
-- vLLM 0.16.0 + ROCm compatibility for that model architecture
-- whether it's gated on Hugging Face (requires `HF_TOKEN`) or open
-- structured-JSON-output reliability (matters for both AMD-eligible stages)
-- context window vs. the longest real prompt (`discriminator` sends the
-  full candidate pool + video context + trend benchmarks — larger than
-  `content_generation`'s prompt)
-- generation latency at the sparse candidate counts ClipContext needs (10 +
-  10 + 10 items, or a ranking pass over 30 items)
+| | |
+|---|---|
+| GPU | AMD Radeon PRO W7900-class, `gfx1100` (RDNA3), single card |
+| VRAM | 48 GiB (`torch.cuda.get_device_properties(0).total_memory`) |
+| ROCm / HIP | 7.2.53211 |
+| PyTorch | 2.9.1 (ROCm build) |
+| vLLM | 0.16.1.dev0 (ROCm721 build), installed at `/opt/venv` |
+| Free disk | ~93 GiB under `/workspace` |
+| RAM | 503 GiB (485 GiB free) |
 
-If a gated model turns out to be the best fit, `amd/start_vllm.sh` reads
-`HF_TOKEN` from the environment automatically (vLLM's own Hugging Face
-download path does) — set it in the notebook's own environment, never in
-this repository, and never paste the token value into chat.
+**Chosen model: `Qwen/Qwen2.5-14B-Instruct`.**
+
+- **Ungated** — no Hugging Face access request, no `HF_TOKEN` needed.
+  Simpler hackathon setup, and there was no quality reason to pay the
+  gated-model tax here.
+- **Fits VRAM with real headroom**: ~29 GiB weights in bf16 against 48 GiB
+  VRAM leaves ~19 GiB for KV cache — generous for ClipContext's prompt
+  sizes (see `MAX_MODEL_LEN` below).
+- **Fits the 93 GiB disk budget with margin.** A 30B+ model in bf16 (~60+
+  GiB steady state, and roughly double that at download peak while the
+  temp file and the final cached copy briefly coexist) would have been too
+  close to the disk ceiling for a live-demo-critical download. 14B leaves
+  headroom.
+- **`Qwen2ForCausalLM` is a long-supported vLLM architecture**, including
+  on ROCm — lower integration risk than a newer/less-tested architecture on
+  RDNA3, where vLLM's ROCm attention-kernel support is less mature than on
+  the CDNA datacenter cards (MI200/MI300).
+- **Strong structured-JSON instruction-following** at 14B, which both
+  AMD-eligible stages depend on (`GeneratedContent`'s exact 10/10/10 +
+  sequential-id schema, `DiscriminatorResult`'s ranking schema).
+- **Context window**: native 32K (Qwen2.5's default), far more than either
+  stage's real prompt needs — `discriminator` sends the largest prompt
+  (full 30-candidate pool + video digest + trend benchmarks), still well
+  under 8K tokens in practice. `MAX_MODEL_LEN=16384` (set below) caps KV
+  cache allocation to what's actually needed rather than reserving VRAM for
+  32K of context nothing here uses.
+
+```bash
+export AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct"
+export MAX_MODEL_LEN=16384
+export GPU_MEMORY_UTILIZATION=0.88
+```
+
+RDNA3 note: if the server hangs or errors during CUDA-graph capture at
+startup, add `--enforce-eager` to `amd/start_vllm.sh`'s `ARGS` (eager mode
+trades some throughput for skipping graph capture, which is the first
+thing to try on `gfx1100` if the default path misbehaves) rather than
+switching models.
 
 ## Network access
 
