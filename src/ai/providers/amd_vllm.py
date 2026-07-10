@@ -66,7 +66,14 @@ class AmdVllmProvider(AIProvider):
             raise ProviderUnavailableError("AMD_VLLM_BASE_URL is not set")
 
         if self._client is None or self._client_base_url != base_url:
-            timeout_seconds = float(os.getenv("AMD_VLLM_TIMEOUT_SECONDS", "60"))
+            # 60s was measured to be unsafe: a real content_generation run
+            # against Qwen2.5-14B-Instruct on the allocated RDNA3 notebook
+            # took 72.2s for a 978-token completion (~13.5 tok/s) — see
+            # amd/README.md "Model selection" / benchmark notes. 240s gives
+            # headroom above that measurement; raise further via the env
+            # var if DISCRIMINATOR_PROVIDER=amd_vllm is also enabled, since
+            # its max_tokens ceiling is higher.
+            timeout_seconds = float(os.getenv("AMD_VLLM_TIMEOUT_SECONDS", "240"))
             self._client = OpenAI(
                 api_key=self._api_key(),
                 base_url=base_url,

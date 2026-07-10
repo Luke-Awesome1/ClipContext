@@ -96,26 +96,54 @@ src/ai/providers/amd_vllm.py  ──▶  AMD_VLLM_BASE_URL (OpenAI-compatible)
                           AMD Radeon PRO W7900-class GPU (gfx1100, 48GB VRAM)
 ```
 
-**Stages that run on AMD:** `content_generation` and `discriminator` — see
-[Why these two stages](#why-these-two-stages-and-not-vision).
+**Stage that runs on AMD by default: `content_generation`** — the
+judge-visible "10 titles / 10 descriptions / 10 hashtag sets" stage. The
+`discriminator` stage is also fully code-supported on AMD
+(`DISCRIMINATOR_PROVIDER=amd_vllm`) but defaults to Fireworks to keep a
+single AMD wait in the live-demo critical path — see [Why these two
+stages](#why-these-two-stages-and-not-vision) for why both are
+AMD-eligible, and [Demo timing](#demo-timing-a-real-measured-tradeoff)
+below for the latency data behind that default.
 
 **Real hardware, confirmed via `amd/verify_rocm.py` on the allocated
 notebook:** AMD Radeon PRO W7900-class GPU, `gfx1100` (RDNA3), 48 GiB VRAM,
 single card; ROCm/HIP 7.2.53211; PyTorch 2.9.1 (ROCm build); vLLM
 0.16.1.dev0 (ROCm721 build); ~93 GiB free disk; 503 GiB RAM.
 
-**The exact model running on AMD: `Qwen/Qwen2.5-14B-Instruct`.** Selected
-against the real numbers above, not guessed beforehand — see
-`amd/README.md`'s [Model selection](../amd/README.md#model-selection) for
-the full reasoning: ungated (no `HF_TOKEN`), ~29 GiB bf16 weights fit 48 GiB
-VRAM with ~19 GiB headroom for KV cache, fits the 93 GiB disk budget with
-margin (a 30B+ model's download-time peak usage would not have), a
-long-validated vLLM architecture on ROCm, strong structured-JSON
-instruction-following, and a 32K native context window far exceeding
-either stage's real prompt size (`MAX_MODEL_LEN=16384` caps KV cache
-allocation to what's actually used). Real benchmark numbers from
-`amd/benchmark_amd.py` will be added here once a full run against the live
-server completes.
+**The exact model running on AMD: `Qwen/Qwen2.5-7B-Instruct`.** Selected
+against the real numbers above, not guessed beforehand, and revised down
+from an initial `Qwen2.5-14B-Instruct` choice after a real benchmark
+exposed a live-demo timing problem — see [Demo timing](#demo-timing-a-real-measured-tradeoff).
+Ungated (no `HF_TOKEN`); a Gemma alternative was considered and rejected
+(Gemma models are gated on Hugging Face, requiring a license
+click-through + granted token, for no proven advantage over a family
+already validated end-to-end — real download, real GPU load, real
+inference, confirmed native `response_format: json_schema` structured
+output on the first request — on this exact notebook/vLLM build).
+
+### Demo timing: a real, measured tradeoff
+
+A real `amd/benchmark_amd.py` run against `Qwen2.5-14B-Instruct` on this
+notebook measured **72.2s latency, 978 completion tokens, 13.5 tok/s**. The
+vLLM startup log ruled out a configuration bug: CUDA graphs captured
+successfully; the ceiling is `Using Triton Attention backend` — vLLM's
+most optimized ROCm attention kernels target AMD's CDNA datacenter cards
+(MI200/MI300), and this card's `gfx1100` (RDNA3) architecture falls back to
+the more general Triton kernel. A 14B bf16 model reads ~28 GiB of weights
+per decode step at batch size 1; against this card's memory bandwidth that
+puts a rough single-stream ceiling around 25–30 tok/s even in ideal
+conditions, so 13.5 tok/s reflects the hardware/kernel combination, not a
+bug worth chasing further under time pressure.
+
+At 72s per call, running both AMD-eligible stages live in a 2–5 minute demo
+would add 2.5–4 minutes just for those two stages. Resizing to
+`Qwen2.5-7B-Instruct` roughly halves memory traffic per decode step, which
+for this memory-bandwidth-bound workload should roughly double throughput —
+still real, non-trivial GPU inference, sized for a live demo rather than
+offline batch quality. This is a documented, deliberate tradeoff, not a
+hidden one: the technical ceiling (14B, both stages) is real and
+reproducible via `amd/benchmark_amd.py`; the demo default (7B, one stage)
+is a live-presentation engineering choice layered on top of it.
 
 **Why these two stages, and not vision:** `content_generation` and
 `discriminator` are ClipContext's only text-only, structured-JSON AI

@@ -107,21 +107,23 @@ notebook as production infrastructure it isn't. Instead:
    [Model selection](#model-selection):
    ```bash
    source /opt/venv/bin/activate
-   export AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct"
+   export AMD_VLLM_MODEL="Qwen/Qwen2.5-7B-Instruct"
    export MAX_MODEL_LEN=16384
    export GPU_MEMORY_UTILIZATION=0.88
    export AMD_VLLM_API_KEY="<a-random-string-you-generate>"   # recommended
    bash amd/start_vllm.sh
    ```
-   First start downloads ~29 GiB from Hugging Face — expect several minutes
-   depending on the notebook's outbound bandwidth. Watch for `Uvicorn
-   running on http://0.0.0.0:8000` before moving on.
+   If a `Qwen2.5-14B-Instruct` server is already running from an earlier
+   step, stop it first (`Ctrl+C` in its session, or `tmux kill-session -t
+   vllm`) — only one model can be loaded at a time on a single GPU. First
+   start of a new model downloads from Hugging Face (~15 GiB for 7B) —
+   watch for `Uvicorn running on http://0.0.0.0:8000` before moving on.
 6. From the notebook's own terminal (a second one, since the first is
    running the server in the foreground), confirm it serves usable
    completions over localhost before worrying about external reachability:
    ```bash
    AMD_VLLM_BASE_URL="http://localhost:8000/v1" \
-   AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct" \
+   AMD_VLLM_MODEL="Qwen/Qwen2.5-7B-Instruct" \
    AMD_VLLM_API_KEY="<same-key>" \
    /opt/venv/bin/python amd/smoke_test.py
    ```
@@ -129,27 +131,28 @@ notebook as production infrastructure it isn't. Instead:
    pipeline uses), still over localhost:
    ```bash
    AMD_VLLM_BASE_URL="http://localhost:8000/v1" \
-   AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct" \
+   AMD_VLLM_MODEL="Qwen/Qwen2.5-7B-Instruct" \
    AMD_VLLM_API_KEY="<same-key>" \
    /opt/venv/bin/python amd/benchmark_amd.py
    ```
 8. Point the real backend at it (repo root `.env`, **not** the notebook —
    see [Network access](#network-access) for how `<notebook-host-or-tunnel>`
    gets resolved, since this notebook's port is not necessarily reachable
-   from outside as-is):
+   from outside as-is). Only `content_generation` defaults to AMD for the
+   demo — see [AMD stage scope for the demo](#amd-stage-scope-for-the-demo):
    ```
    AMD_VLLM_BASE_URL=http://<notebook-host-or-tunnel>:8000/v1
-   AMD_VLLM_MODEL=Qwen/Qwen2.5-14B-Instruct
+   AMD_VLLM_MODEL=Qwen/Qwen2.5-7B-Instruct
    AMD_VLLM_API_KEY=<same-key>
    CONTENT_GENERATION_PROVIDER=amd_vllm
    CONTENT_GENERATION_FALLBACK_PROVIDER=fireworks
-   DISCRIMINATOR_PROVIDER=amd_vllm
-   DISCRIMINATOR_FALLBACK_PROVIDER=fireworks
+   # DISCRIMINATOR_PROVIDER left unset -> defaults to fireworks; set to
+   # amd_vllm too only for an extended non-timed technical walkthrough.
    ```
 9. Restart the backend, run a real video through the pipeline, and check
    `GET /api/providers/status` and the completed job's `ai_audit` field
    (`outputs/<job_id>/ai_provider_audit.json`) for `provider_used:
-   "amd_vllm"` and `fallback_used: false` on both stages.
+   "amd_vllm"` and `fallback_used: false` on the `content_generation` stage.
 
 Do not run the Next.js frontend, Firebase, or the public FastAPI backend on
 the notebook itself — it's inference compute only.
@@ -169,44 +172,82 @@ notebook (`amd/verify_rocm.py`):
 | Free disk | ~93 GiB under `/workspace` |
 | RAM | 503 GiB (485 GiB free) |
 
-**Chosen model: `Qwen/Qwen2.5-14B-Instruct`.**
+**Chosen model: `Qwen/Qwen2.5-7B-Instruct`** (revised down from 14B after a
+real benchmark — see [Why 7B, not 14B](#why-7b-not-14b) below).
 
 - **Ungated** — no Hugging Face access request, no `HF_TOKEN` needed.
-  Simpler hackathon setup, and there was no quality reason to pay the
-  gated-model tax here.
-- **Fits VRAM with real headroom**: ~29 GiB weights in bf16 against 48 GiB
-  VRAM leaves ~19 GiB for KV cache — generous for ClipContext's prompt
-  sizes (see `MAX_MODEL_LEN` below).
-- **Fits the 93 GiB disk budget with margin.** A 30B+ model in bf16 (~60+
-  GiB steady state, and roughly double that at download peak while the
-  temp file and the final cached copy briefly coexist) would have been too
-  close to the disk ceiling for a live-demo-critical download. 14B leaves
-  headroom.
+  (Gemma was considered and rejected: Gemma models are gated on Hugging
+  Face, requiring a license click-through and a granted `HF_TOKEN` before
+  anything downloads — extra setup for no proven speed or JSON-reliability
+  win over a family already validated end-to-end on this exact stack.)
 - **`Qwen2ForCausalLM` is a long-supported vLLM architecture**, including
-  on ROCm — lower integration risk than a newer/less-tested architecture on
-  RDNA3, where vLLM's ROCm attention-kernel support is less mature than on
-  the CDNA datacenter cards (MI200/MI300).
-- **Strong structured-JSON instruction-following** at 14B, which both
+  on ROCm, and was already proven working (download, load, inference,
+  native structured JSON) at 14B on this exact notebook/vLLM build before
+  being resized down — lower risk than switching model families under time
+  pressure.
+- **Strong structured-JSON instruction-following**, which both
   AMD-eligible stages depend on (`GeneratedContent`'s exact 10/10/10 +
-  sequential-id schema, `DiscriminatorResult`'s ranking schema).
-- **Context window**: native 32K (Qwen2.5's default), far more than either
-  stage's real prompt needs — `discriminator` sends the largest prompt
-  (full 30-candidate pool + video digest + trend benchmarks), still well
-  under 8K tokens in practice. `MAX_MODEL_LEN=16384` (set below) caps KV
-  cache allocation to what's actually needed rather than reserving VRAM for
-  32K of context nothing here uses.
+  sequential-id schema, `DiscriminatorResult`'s ranking schema) — confirmed
+  directly: the 14B variant produced valid `GeneratedContent` JSON via
+  native `response_format: json_schema` on the first real request, no
+  fallback or repair retry needed.
+- **Context window**: native 32K, far more than either stage's real prompt
+  needs. `MAX_MODEL_LEN=16384` caps KV cache allocation to what's actually
+  used.
 
 ```bash
-export AMD_VLLM_MODEL="Qwen/Qwen2.5-14B-Instruct"
+export AMD_VLLM_MODEL="Qwen/Qwen2.5-7B-Instruct"
 export MAX_MODEL_LEN=16384
 export GPU_MEMORY_UTILIZATION=0.88
 ```
 
+### Why 7B, not 14B
+
+A real `amd/benchmark_amd.py` run against `Qwen2.5-14B-Instruct` on this
+notebook measured **72.2s latency, 978 completion tokens, 13.5 tok/s**. The
+vLLM startup log showed why: CUDA graphs captured successfully
+(`enforce_eager=False`, graph capture finished cleanly in 18s) — the
+bottleneck is `Using Triton Attention backend`, vLLM's portable-but-generic
+attention kernel. vLLM's most optimized ROCm attention kernels target the
+CDNA datacenter cards (MI200/MI300); on this card's `gfx1100` (RDNA3)
+architecture, Triton is the auto-selected fallback. Back-of-envelope: a 14B
+bf16 model reads ~28 GiB of weights per decode step at batch size 1, which
+against this card's memory bandwidth puts a rough single-stream ceiling
+around 25–30 tok/s even in ideal conditions — 13.5 tok/s is in a plausible
+range for that ceiling with a non-fused attention kernel, not evidence of a
+misconfiguration to keep chasing.
+
+At 72s per call, running both AMD-eligible stages live would add roughly
+2.5–4 minutes to a 2–5 minute demo. **Qwen2.5-7B-Instruct roughly halves
+the memory traffic per decode step**, which for this memory-bandwidth-bound
+single-stream workload should roughly double throughput (~25–30 tok/s,
+~35–40s per `content_generation` call) — still real GPU inference on a
+non-trivial model, just sized for a live demo instead of offline batch
+quality. `amd/README.md`'s benchmark commands below will be re-run against
+7B to confirm the real number once the server is restarted.
+
+An AWQ/GPTQ int4-quantized 14B build was considered and set aside for now:
+it could plausibly claim back more throughput than resizing to 7B, but
+needs a compatible pre-quantized checkpoint and unproven quantized-kernel
+support on `gfx1100` — real risk to take on this close to a demo, versus
+resizing within an already-proven model family.
+
+### AMD stage scope for the demo
+
+Only `CONTENT_GENERATION_PROVIDER=amd_vllm` is set by default — the
+judge-visible "10 titles / 10 descriptions / 10 hashtag sets" stage runs on
+AMD. `DISCRIMINATOR_PROVIDER` is left unset (defaults to `fireworks`),
+keeping the discriminator on the already-fast, already-validated Fireworks
+path rather than adding a second AMD wait (its `max_tokens` ceiling is
+higher, so its worst-case latency is worse than `content_generation`'s) to
+the demo's critical path. Both stages remain fully code-supported on AMD —
+set `DISCRIMINATOR_PROVIDER=amd_vllm` too for an extended technical
+walkthrough or Q&A outside the timed demo.
+
 RDNA3 note: if the server hangs or errors during CUDA-graph capture at
-startup, add `--enforce-eager` to `amd/start_vllm.sh`'s `ARGS` (eager mode
-trades some throughput for skipping graph capture, which is the first
-thing to try on `gfx1100` if the default path misbehaves) rather than
-switching models.
+startup on a future run, add `--enforce-eager` to `amd/start_vllm.sh`'s
+`ARGS` (eager mode trades some throughput for skipping graph capture) —
+not needed for the run recorded above, capture succeeded cleanly.
 
 ## Network access
 
