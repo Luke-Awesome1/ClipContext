@@ -3,15 +3,15 @@ import os
 from faster_whisper import WhisperModel
 
 
-# "small" (~244M params) was OOM-killing the Railway deployment: combined
-# with frame extraction buffers, ffmpeg, and the FastAPI process already
-# resident in memory at this point in the pipeline, it pushed the
-# container past its memory limit (confirmed via a bare "Killed" in the
-# container logs — a SIGKILL from the OOM killer, not a Python exception).
-# "base" (~74M params) cuts the model's memory footprint roughly 3x.
-# Override via WHISPER_MODEL_SIZE if running on a host with more memory
-# headroom and better transcription accuracy is worth the tradeoff.
-DEFAULT_WHISPER_MODEL_SIZE = "base"
+# "small" (~244M params) OOM-killed the Railway deployment; "base" (~74M)
+# reduced but did not eliminate it — confirmed intermittent even on "base"
+# (bare "Killed" in the container logs — a SIGKILL from the OOM killer,
+# not a Python exception), meaning the deployment is operating right at
+# its memory ceiling and any model size is a mitigation, not a guarantee.
+# "tiny" (~39M params) is the smallest available. Override via
+# WHISPER_MODEL_SIZE on a host with more memory headroom, where transcript
+# accuracy matters more than staying under a tight limit.
+DEFAULT_WHISPER_MODEL_SIZE = "tiny"
 
 _model = None
 
