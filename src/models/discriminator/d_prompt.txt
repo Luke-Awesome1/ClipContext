@@ -44,14 +44,10 @@ candidate should outscore a louder one that overclaims.
   length, and hook type. A pool where every title reads like a variant of
   the same sentence should score lower across the board, even if each one
   individually is well-written.
-
-### B. DESCRIPTION-SPECIFIC
-- Reward a strong above-the-fold opening (first 1-2 lines) that would
-  survive being truncated by "Show more".
-- Reward natural, non-stuffed use of seo_vocabulary / niche search terms.
-- Penalize descriptions that only restate the title with no new
-  information.
-
+### B. DESCRIPTION EVALUATION MATRIX
+- Above-the-Fold Engagement: Highly score candidates that present a strong, context-rich opening in the first 1–2 lines designed to capture viewer attention before truncation by the "Show more" button.
+- Strategic Discoverability: Evaluate the integration of seo_vocabulary and niche search terms, rewarding natural readability and contextual relevance over formulaic keyword stuffing.
+- Informational Density: Prioritize descriptions that expand on the video's core narrative arc, lowering the score of candidates that merely repeat the title verbatim without introducing new value or context.
 ### C. HASHTAG-SPECIFIC
 - Confirm tags are a clean JSON array of strings, each starting with "#".
 - Reward a real mix of broad-reach and niche/specific tags over a set

@@ -80,38 +80,26 @@ Hard constraints on every title:
 
 ---
 
-## DESCRIPTIONS (exactly 10)
+#### Descriptions (Generate exactly 10)
+- Purpose: Every candidate must be generated as public, viewer-facing copy ready to be pasted directly into a YouTube description box. Speak directly to the audience about the subject matter; never write structural commentary about the video file itself.
 
-Each id below is a fixed format. Vary length and structure for real, not
-just wording:
+You must generate exactly 10 distinct description candidates. To maximize audience variety, each ID must execute a completely different structural blueprint for real:
 
-1. Short punchy hook (1-2 sentences), built for above-the-fold impact.
-2. Long-form editorial: sets up context, then the core narrative arc.
-3. Structured / educational: plain-text paragraph breaks separating
-   setup, takeaway, and context — no markdown bullets, this is a
-   description box, not a document.
-4. Community / conversational: speaks directly to the viewer, ends on a
-   natural call-to-action (comment, follow, watch next) that fits the
-   content — never a bolted-on generic CTA.
-5. SEO-forward: opens with the strongest seo_vocabulary phrase that still
-   reads as a real sentence, not a keyword dump.
-6. Technical / detail-forward: leans on key_entities and visible_text for
-   viewers who want precision over hook.
-7. Curiosity / cliffhanger: raises the open loop from the title, resolves
-   it partially, leaves a real reason to keep watching.
-8. Creator-voice / authentic: first-person, casual, matches adjectives —
-   reads like the creator wrote it, not a marketer.
-9. Benefit-driven: leads with what the viewer walks away with.
-10. Minimalist: one tight paragraph, no CTA, no filler — confidence
-    through brevity.
+- ID 1 [The Immediate Value-Drop]: Open instantly with a 1-2 sentence high-impact statement revealing the video's biggest realization. No intro, no filler—just pure momentum that forces a reader to click "Show more".
+- ID 2 [The Narrative Journey]: Write an immersive, multi-paragraph editorial that drops the reader directly into the story's peak conflict, builds out the real-world context, and maps the entire journey's resolution.
+- ID 3 [The Structured Value Breakdown]: Use clean, double line-breaks to separate three distinct paragraphs: the immediate problem/setup, the core transformation or lesson learned, and the global real-world impact. Do not use markdown bullet points or dashes.
+- ID 4 [The Interactive Community Hook]: Write in an engaging, viewer-first conversational tone. Close the description naturally by posing a compelling, topic-specific question that invites immediate viewer debate in the comments.
+- ID 5 [The Search-Optimized Opener]: Open the very first sentence with a high-volume, organic phrasing of the primary SEO search term. Build a naturally flowing, authoritative paragraph around it without ever disrupting readability.
+- ID 6 [The Deep Intel Blueprint]: Focus heavily on the exact technical specifications, key entities, and precise data points extracted from the video context. Engineered for viewers who demand precision over hype.
+- ID 7 [The Open Loop Suspense]: Establish a powerful psychological cliffhanger in the first sentence. Partially answer it in the second paragraph, leaving an unmissable incentive to watch the video through to the final frame.
+- ID 8 [The Casual Behind-The-Scenes]: Write in a raw, authentic, first-person creator voice. Use personal, high-energy adjectives that make it sound like a quick, passionate thought typed directly out of a personal notes app.
+- ID 9 [The Viewer Takeaway]: Lead directly with the exact personal benefit, skill, or paradigm shift the viewer walks away with after watching. Focus entirely on the immediate ROI of their attention.
+- ID 10 [The Brief Execution]: A single, highly concentrated, ultra-brief paragraph. Zero fluff, zero calls to action, no links placeholders—just total confidence expressed through raw brevity.
 
-Every description:
-- Must open with something that earns the "Show more" click on its own —
-  no throat-clearing ("In this video...", "Check out this...").
-- May repeat 1-2 core keywords from seo_vocabulary naturally; never stuff.
-- Must stay inside the facts in VIDEO_CONTEXT.
-- Use a real paragraph break between the hook and the body where the
-  format calls for it — do not fake structure with bullet symbols.
+CRITICAL DISCOVERY STANDARDS:
+1. Above-the-Fold Forcing: The first 2 lines of every single ID must be high-impact, context-rich copy that creates immediate intrigue or summarizes the ultimate value of the video to drive CTR before a user clicks "Show More".
+2. Banned Phrases: NEVER use passive, descriptive phrases that analyze the media composition (e.g., BANNED: "This video shows...", "The clip begins with...", "At 0:15 the speaker transitions..."). 
+3. Complete Independence: Ensure candidate descriptions have absolutely zero duplicate opening phrases, sentence structures, or wording choices across the 10 options.
 
 ---
 
