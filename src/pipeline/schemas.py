@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 from src.models.discriminator.discriminator import DiscriminatorResult
 from src.models.generated_content import GeneratedContent
-from src.models.video_context import VideoContext
 
 
 class PipelineStage(str, Enum):

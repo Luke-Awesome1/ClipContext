@@ -1,0 +1,11 @@
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+exclude = ["outputs", "data", ".venv"]
+
+[tool.ruff.lint]
+# Correctness-focused: unused imports/names, undefined names, syntax errors.
+# The codebase uses an unusually vertical one-argument-per-line style
+# throughout — intentionally not enabling style/formatting rules here, since
+# `ruff format` would rewrite most of the repo for no functional benefit.
+select = ["F", "E9"]

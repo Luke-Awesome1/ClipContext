@@ -1,0 +1,52 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "main.py"
+      - "tests/**"
+      - "requirements.txt"
+      - "pyproject.toml"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "src/**"
+      - "main.py"
+      - "tests/**"
+      - "requirements.txt"
+      - "pyproject.toml"
+      - ".github/workflows/backend.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      # All external calls (Fireworks, AMD vLLM, YouTube Data API, Firebase
+      # Admin) are mocked in tests/ — no API keys or GPU needed here.
+      - run: python -m pytest tests/ -v
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: pip install ruff
+
+      # Correctness-only ruleset (unused imports, undefined names, syntax
+      # errors) — see pyproject.toml for why formatting rules aren't enabled.
+      - run: ruff check src main.py

@@ -227,6 +227,10 @@ export default function ResultsPanel({
         editedHashtags,
       }),
     );
+    // Deliberately keyed on selection, not the edited-text state itself —
+    // this only needs to persist which candidate + its edits are current
+    // when the selection changes, not re-run on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, isDemo, selectedTitleId, selectedDescriptionId, selectedHashtagId]);
 
   const copyAll = useCallback(async () => {

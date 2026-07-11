@@ -129,7 +129,16 @@ export default function UploadSection() {
       setError(message);
       setIsSubmitting(false);
     }
-  }, [selectedFile, isSubmitting, creatorContext, isValidYouTubeUrl, setVideo, setJob, router]);
+  }, [
+    selectedFile,
+    isSubmitting,
+    creatorContext,
+    hasChannelUrl,
+    isValidYouTubeUrl,
+    setVideo,
+    setJob,
+    router,
+  ]);
 
   return (
     <section id="upload" className="relative py-24 sm:py-32">

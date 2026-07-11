@@ -1,16 +1,9 @@
 {
-  "name": "act2-captioner",
+  "name": "clipcontext",
   "version": "1.0.0",
-  "description": "AI-powered video captioning and analysis tool",
+  "description": "AI-powered video-to-social-metadata pipeline (FastAPI backend + Next.js frontend). This is a Python/Node monorepo — see the Makefile for the canonical dev commands (`make setup`, `make backend`, `make frontend`, `make test`); this file exists only so editors/tools that expect a root package.json find one.",
   "private": true,
-  "scripts": {
-    "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd frontend && npm run start",
-    "lint": "cd frontend && npm run lint",
-    "backend": ".venv/bin/python main.py"
-  },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "MIT"
 }
