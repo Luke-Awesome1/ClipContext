@@ -9,10 +9,10 @@ please read this before opening a PR.
 - For anything larger than a small fix (a new feature, a schema change, a
   new pipeline stage), open an issue first to discuss the approach. Small
   bug fixes and doc improvements can go straight to a PR.
-- Read [AGENTS.md](AGENTS.md) — it lists the non-negotiable invariants
-  this codebase maintains (provider fallback truthfulness, auth boundary
-  separation, in-memory-state-implies-single-instance, etc.). A PR that
-  removes one of these without discussion will likely be asked to change.
+- Read [docs/Architecture.md § Non-negotiable invariants](docs/Architecture.md#non-negotiable-invariants)
+  — provider fallback truthfulness, auth boundary separation,
+  in-memory-state-implies-single-instance, etc. A PR that removes one of
+  these without discussion will likely be asked to change.
 - Read [docs/Architecture.md](docs/Architecture.md) for the system shape
   before touching a module you haven't worked in before.
 
@@ -62,8 +62,9 @@ requirement), but keep the first line under ~72 characters.
   unrelated files is harder to review and more likely to get blocked.
 - Note any behavior change explicitly in the PR description, even a small
   one — this repo has several deliberately-non-obvious behaviors (see
-  AGENTS.md's invariants list) and reviewers need to know if you changed
-  one on purpose vs. accidentally.
+  [docs/Architecture.md § Non-negotiable invariants](docs/Architecture.md#non-negotiable-invariants))
+  and reviewers need to know if you changed one on purpose vs.
+  accidentally.
 - CI (`.github/workflows/`) runs backend tests, frontend build/lint/
   typecheck automatically. A PR won't merge with a red check.
 

@@ -162,8 +162,10 @@ TypeScript type in the same PR.
 ## Code conventions
 
 - No speculative abstraction — a bug fix doesn't need a refactor, a
-  one-shot script doesn't need a plugin system. See `AGENTS.md` for the
-  full list of things not to "clean up" because they're deliberate.
+  one-shot script doesn't need a plugin system. See
+  [Architecture.md § Non-negotiable invariants](Architecture.md#non-negotiable-invariants)
+  for the full list of things not to "clean up" because they're
+  deliberate.
 - Comments explain *why*, not *what*. If a comment just restates the code
   above it, it doesn't belong.
 - Don't add error handling for scenarios that can't happen — validate at

@@ -144,6 +144,33 @@ navigations, both persisted to `sessionStorage` so a full-page redirect
 
 Detail, including the full page/route map: [Frontend.md](Frontend.md).
 
+## Non-negotiable invariants
+
+These are safety/trust properties this codebase deliberately maintains.
+They're easy to break by accident while "simplifying" a module, so any PR
+touching one of these areas should call it out explicitly:
+
+- **The browser never talks to the AMD vLLM endpoint directly.** Only the
+  FastAPI backend does, via `AMD_VLLM_BASE_URL` in its own environment.
+- **AMD usage is never faked.** `ai_audit` / `provider_used` on a
+  `PipelineResult` reflects which provider *actually* handled that stage;
+  the frontend's AMD badge (`AIUnderstandingCard.tsx`) only lights up when
+  `provider_used === "amd_vllm"` for that specific stage, never on
+  `provider_requested` alone. See [AMD.md](AMD.md).
+- **ClipContext account login and "Connect with YouTube" are separate
+  identity systems** (Firebase UID vs. a `cc_session` cookie tied to
+  stored Google OAuth credentials) — never assume they're the same user.
+  See [Firebase.md](Firebase.md) and [YouTube.md](YouTube.md).
+- **`src/api/jobs.py`'s job registry, and the YouTube session/state/token
+  stores in `src/youtube/`, are in-memory by design** — this is why
+  `railway.toml` pins `numReplicas = 1`. Don't scale this backend
+  horizontally without first adding shared state (Redis, a DB) for both.
+- **The YouTube upload video path is always resolved server-side from
+  `job_id`**, never accepted as a client-supplied path.
+- Anonymous use must keep working with zero optional config: no
+  `FIREBASE_PROJECT_ID`, no `GOOGLE_CLIENT_ID`, no AMD vars — upload,
+  process, and results must all still work.
+
 ## Deployment topology
 
 ```mermaid
