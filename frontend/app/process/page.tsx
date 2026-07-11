@@ -12,15 +12,17 @@ import PageTransition from "@/components/ui/PageTransition";
 
 export default function ProcessPage() {
   const router = useRouter();
-  const { hasSession, videoUrl, fileName, isDemo, jobId, setJobStatus } =
+  const { hasSession, hydrated, videoUrl, fileName, isDemo, jobId, setJobStatus } =
     useVideoSession();
   const { jobStatus, error } = useJobPolling(jobId);
 
+  // See app/results/page.tsx for why this waits on `hydrated` rather than
+  // redirecting on the very first (pre-restore) render.
   useEffect(() => {
-    if (!hasSession) {
+    if (hydrated && !hasSession) {
       router.replace("/#upload");
     }
-  }, [hasSession, router]);
+  }, [hydrated, hasSession, router]);
 
   useEffect(() => {
     if (!jobStatus) return;
@@ -32,7 +34,7 @@ export default function ProcessPage() {
     }
   }, [jobStatus, setJobStatus, router]);
 
-  if (!hasSession) return null;
+  if (!hydrated || !hasSession) return null;
 
   // Demo mode has no backend job — keep the legacy staged animation dormant
   // and simply route straight through once mounted.

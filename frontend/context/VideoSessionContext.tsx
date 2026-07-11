@@ -19,6 +19,7 @@ interface VideoSessionContextValue {
   fileName: string | null;
   isDemo: boolean;
   hasSession: boolean;
+  hydrated: boolean;
   jobId: string | null;
   jobStatus: JobStatus | null;
   creatorContext: CreatorContext;
@@ -138,6 +139,7 @@ export function VideoSessionProvider({ children }: { children: React.ReactNode }
       fileName,
       isDemo,
       hasSession: hydrated && Boolean(videoUrl || isDemo || jobId),
+      hydrated,
       jobId,
       jobStatus,
       creatorContext,
