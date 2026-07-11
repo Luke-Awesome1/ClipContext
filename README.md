@@ -178,10 +178,46 @@ ClipContext account login (optional, Firebase) and "Connect with YouTube"
 systems — a user is never assumed to be the same person across both. Both
 are fully optional; the core workflow needs neither.
 
+- **ClipContext account login** — optional, backed by Firebase
+  Authentication. Gates the "save this result" feature; everything else
+  (upload, process, results) works with zero Firebase config.
+- **"Connect with YouTube"** — optional, a separate raw Google OAuth 2.0
+  flow (not Firebase), scoped to upload + read-only access on the
+  creator's own channel. Identity is bound to an opaque, HttpOnly
+  `cc_session` cookie, never assumed to be the same person as a
+  ClipContext account login.
+- **Direct YouTube upload** — once connected, a user can upload the
+  analyzed video straight to their channel with whichever title/
+  description/hashtags they picked. The upload path is always resolved
+  server-side from the job ID, never accepted as a client-supplied path;
+  upload runs in the background with the frontend polling for progress.
+
 - **[docs/Firebase.md](docs/Firebase.md)** — account login, saved
   artifacts, Firestore setup from scratch.
 - **[docs/YouTube.md](docs/YouTube.md)** — OAuth client setup, upload
   flow, Testing-mode restrictions.
+
+## Storage
+
+Two independent storage layers, neither required for the core workflow:
+
+- **Saved artifacts (optional, Firestore).** When signed in to a
+  ClipContext account, a user can save a completed generation's picks — the
+  selected title/description/hashtags plus the AI understanding/analysis
+  behind them — as an "artifact," stored in Cloud Firestore at
+  `users/{uid}/artifacts/{artifact_id}`. Saving re-reads the actual result
+  server-side rather than trusting client-supplied content, and re-saving
+  the same job updates it in place instead of duplicating it. Artifacts
+  can be listed, fetched, and deleted, and every route degrades to a
+  structured "not configured" response — never a crash — when Firebase
+  isn't set up.
+- **Raw video & pipeline working files (always, local disk).** The
+  uploaded video itself and pipeline caches (frames, transcription,
+  visual-analysis intermediates, keyed by job ID / video hash) live on
+  local disk under `data/` and `outputs/` (both gitignored). There is no
+  cloud object storage (no GCS/S3 bucket) anywhere in this codebase — this
+  is also why deployment requires a persistent container host rather than
+  serverless (see [Deployment](#deployment) below).
 
 ## Deployment
 
