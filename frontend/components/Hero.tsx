@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -116,22 +117,15 @@ export default function Hero() {
             className="relative rounded-lg border border-neutral-200 bg-white/80 p-4 shadow-sm backdrop-blur-2xl sm:p-5"
           >
             <div className="relative space-y-4">
-              <div className="relative overflow-hidden rounded-lg border border-neutral-200 bg-neutral-900 shadow-sm">
-                <div className="aspect-video bg-[linear-gradient(135deg,#1f2933,#111827_45%,#2f3d36)]">
-                  <div className="absolute inset-x-0 bottom-0 h-20 bg-black/35" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <motion.div
-                      animate={{ y: [0, -3, 0], scale: [1, 1.02, 1] }}
-                      transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-                      className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/10 backdrop-blur-md"
-                    >
-                      <Play size={22} className="ml-1 fill-white text-white" />
-                    </motion.div>
-                  </div>
-                  <div className="absolute bottom-3 left-3 rounded-md bg-black/50 px-2 py-1 text-[10px] font-medium text-neutral-300 backdrop-blur-sm">
-                    test-video.mp4 · 0:38
-                  </div>
-                </div>
+              <div className="relative aspect-video overflow-hidden rounded-lg border border-neutral-200 bg-neutral-900 shadow-sm">
+                <Image
+                  src="/hero.png"
+                  alt="ClipContext — a multimodal Creator Intelligence platform for every creator"
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 32rem, 100vw"
+                  className="object-cover"
+                />
               </div>
 
               <div>
