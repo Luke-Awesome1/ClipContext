@@ -1,0 +1,128 @@
+{
+  "titles": [
+    {
+      "id": 1,
+      "text": "INSANE REAL-TIME AI SCENE ANALYSIS! 🤯 (AMD HACKATHON)"
+    },
+    {
+      "id": 2,
+      "text": "We Built an AI That Truly Understands Video Context"
+    },
+    {
+      "id": 3,
+      "text": "Testing our Multimodal AI Demo Room Setup! 💻"
+    },
+    {
+      "id": 4,
+      "text": "Can AI Solve This Hidden Chessboard Riddle? ♟️"
+    },
+    {
+      "id": 5,
+      "text": "ClipContext Demo: Real-Time Object & Scene Analysis"
+    },
+    {
+      "id": 6,
+      "text": "HOW TO CHOOSE THE BEST SIP FOR 10X RETURNS IN 2026 🤑"
+    },
+    {
+      "id": 7,
+      "text": "The Secret Wall Clock Experiment They Didn't Want You to See"
+    },
+    {
+      "id": 8,
+      "text": "Ayushman and Jinxie vs The Edge-Case Laptop Matrix"
+    },
+    {
+      "id": 9,
+      "text": "This AI vision tool fails half the time..."
+    },
+    {
+      "id": 10,
+      "text": "BUILDING AN AUTONOMOUS DRONE ARMY USING OPEN-SOURCE ALGORITHMS"
+    }
+  ],
+  "descriptions": [
+    {
+      "id": 1,
+      "text": "Watch our real-time ClipContext system completely dissect our physical environment live! Spotting edge-case objects while stress testing performance for the AMD hackathon. Check the full build info below!"
+    },
+    {
+      "id": 2,
+      "text": "Watch ClipContext analyze video content using both visual and spoken information as its creators test the system's ability to understand objects, people, and scenes."
+    },
+    {
+      "id": 3,
+      "text": "Testing our ClipContext model in a messy room environment. Let's see if the computer vision system can distinguish between a chessboard, headphones, and a laptop on the bed."
+    },
+    {
+      "id": 4,
+      "text": "We threw a random assortment of room props like headphones and chess pieces at our model to see if its multi-modal context comprehension engine would break down or hold up."
+    },
+    {
+      "id": 5,
+      "text": "Official multi-modal submission overview and technology architecture breakdown for the upcoming AMD hackathon project pipeline."
+    },
+    {
+      "id": 6,
+      "text": "Forget choosing individual stocks. In this breakdown we cover the top mutual funds and monthly investment plans to scale your net worth completely on autopilot."
+    },
+    {
+      "id": 7,
+      "text": "A deep diving investigative look into the country of origin behind various items found inside our immediate technical testing workspace layout."
+    },
+    {
+      "id": 8,
+      "text": "Ayushman and Jinxie walk through the code and immediate software limitations of running a localized multimodal model in real time."
+    },
+    {
+      "id": 9,
+      "text": "Sometimes the vision algorithms mismatch data boundaries. Here's a raw unedited clip showing exactly where our project gets confused about background objects."
+    },
+    {
+      "id": 10,
+      "text": "Revealing the secret source code to building an autonomous drone army that maps cities entirely by itself using open-source deep learning weights."
+    }
+  ],
+  "hashtags": [
+    {
+      "id": 1,
+      "tags": ["#shorts", "#computervision", "#ai", "#objectdetection"]
+    },
+    {
+      "id": 2,
+      "tags": ["#ArtificialIntelligence", "#MultimodalAI", "#VideoUnderstanding", "#TechDemo"]
+    },
+    {
+      "id": 3,
+      "tags": ["#shorts", "#coding", "#hackathon", "#amd"]
+    },
+    {
+      "id": 4,
+      "tags": ["#shorts", "#chess", "#ai", "#tech"]
+    },
+    {
+      "id": 5,
+      "tags": ["#ClipContext", "#AMD", "#Hackathon", "#AITools"]
+    },
+    {
+      "id": 6,
+      "tags": ["#finance", "#investing", "#sip", "#wealth"]
+    },
+    {
+      "id": 7,
+      "tags": ["#shorts", "#conspiracy", "#secrets"]
+    },
+    {
+      "id": 8,
+      "tags": ["#shorts", "#programming", "#developer"]
+    },
+    {
+      "id": 9,
+      "tags": ["#shorts", "#techfail", "#computervision"]
+    },
+    {
+      "id": 10,
+      "tags": ["#shorts", "#drone", "#robotics", "#engineering"]
+    }
+  ]
+}
