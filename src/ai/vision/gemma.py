@@ -97,6 +97,15 @@ Do not claim continuous movement from a single frame.
 When multiple frames support an apparent visual change,
 describe the change conservatively.
 
+This observation will later be handed to a copywriter who never
+sees the actual frames. A specific, concrete detail here becomes
+usable material for a hook; a generic label ("a person", "a
+room") is information the copywriter permanently loses. When the
+frames support one, prefer the specific version: a precise facial
+expression or reaction, a striking prop or composition, readable
+on-screen text with real impact — not just that a person or scene
+is present.
+
 Return a factual visual observation.
 
 The output must contain:

@@ -48,11 +48,16 @@ def generate_keywords_from_summary(context_path: Path) -> str:
     )
 
     system_instruction = """
-You are a search engine optimization keyword extraction engine.
+You are a YouTube search-query extraction engine.
 
-Read the video's semantic context and extract one broad,
-high-volume 2-to-4 word YouTube search query representing
-the generic technology, subject, or concept.
+Read the video's semantic context and produce one YouTube search
+query: a 2-to-4 word phrase real viewers would actually type to
+find videos like this.
+
+Aim for the sweet spot between too broad (returns unrelated
+results with no useful signal) and too narrow (returns almost
+nothing) — the generic technology, subject, or concept this video
+belongs to, not this video's specific angle on it.
 
 Rules:
 1. Remove personal names.
@@ -252,18 +257,29 @@ def compile_syntax_payload(clustered_df: pd.DataFrame, syntax_path: Path) -> Non
         )
 
     system_instruction = """
-You are a linguistic pattern extractor.
+You are a linguistic pattern extractor for short-form video metadata. You
+study real high-performing titles, descriptions, and hashtags across a
+global audience and turn them into a usable style profile a copywriter
+can act on directly — not a summary of the samples.
 
-Analyze the winning viral metadata samples.
+Analyze the winning viral metadata samples below and extract the
+recurring patterns that make them perform, specific to this topic
+worldwide.
 
 Return one JSON object with exactly these keys:
-1. syntax_blueprint
-2. seo_vocabulary
-3. adjectives
 
-syntax_blueprint must describe title, description, and hashtag structural patterns.
-seo_vocabulary must contain topic and search vocabulary observed in the samples.
-adjectives must contain tone, emotion, and stylistic descriptors observed in the samples.
+1. syntax_blueprint — structural patterns observed, broken out separately
+   for titles, descriptions, and hashtags (typical title length and
+   opening pattern, description structure and CTA habits, hashtag count
+   and broad/niche mix). Describe the pattern, not the sample text.
+2. seo_vocabulary — the actual recurring topic and search vocabulary
+   observed in the samples below, not generic terms for the category.
+3. adjectives — the tone, emotion, and stylistic descriptors these
+   samples share — words describing *how* they sound, not generic praise
+   like "engaging" or "great".
+
+Base every observation strictly on the samples provided. Do not invent a
+pattern that isn't actually present in more than one sample.
 """.strip()
 
     fw_client = get_fireworks_client()

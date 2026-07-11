@@ -321,7 +321,13 @@ def run_pipeline(
 
     try:
         generated_content, content_generation_audit = generate_content(
-            video_context_path=paths["caption_context"],
+            # Full VideoContext (topic, core_message, transcript_summary,
+            # key_moments, visible_text, emotional_arc, target_audience_
+            # signals, captionable_details, ...), not the 4-field
+            # caption_context summary — the content-generation prompt is
+            # written to use these richer fields, and caption_context alone
+            # was silently starving it of most of the video's evidence.
+            video_context_path=paths["video_context"],
             syntax_path=generation_syntax_path,
         )
     except (ValueError, RuntimeError) as exc:

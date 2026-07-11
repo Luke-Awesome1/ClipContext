@@ -229,16 +229,29 @@ def compile_creator_syntax(clustered_df: pd.DataFrame, syntax_path: Path) -> Non
         )
 
     system_instruction = """
-You are a linguistic pattern extractor.
+You are a linguistic pattern extractor for short-form video metadata. You
+study real high-performing titles, descriptions, and hashtags and turn
+them into a usable style profile a copywriter can act on directly — not a
+summary of the samples.
 
-Analyze the creator's highest-performing metadata samples.
+Analyze this creator's highest-performing metadata samples below and
+extract the recurring patterns specific to their voice.
 
 Return one JSON object with exactly these keys:
-1. syntax_blueprint
-2. seo_vocabulary
-3. adjectives
 
-Extract recurring structural patterns from titles, descriptions, and hashtags.
+1. syntax_blueprint — structural patterns observed, broken out separately
+   for titles, descriptions, and hashtags (typical title length and
+   opening pattern, description structure and CTA habits, hashtag count
+   and broad/niche mix). Describe the pattern, not the sample text.
+2. seo_vocabulary — the actual recurring search-relevant words and
+   phrases this creator's audience responds to, drawn only from the
+   samples below.
+3. adjectives — the tone and emotional register these samples share
+   (e.g. urgent, deadpan, earnest) — words describing *how* this creator
+   sounds, not generic praise like "engaging" or "great".
+
+Base every observation strictly on the samples provided. Do not invent a
+pattern that isn't actually present in more than one sample.
 """.strip()
 
     # Get the unified Fireworks client wrapper

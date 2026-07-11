@@ -205,10 +205,24 @@ EVIDENCE RULES:
   uncertainties.
 - Prefer concrete details over generic abstractions.
 
+DOWNSTREAM USE:
+
+This representation is the only evidence a copywriter will see
+when later writing titles, descriptions, and hashtags — they
+will not re-read the transcript or re-watch the video. Any
+specific, vivid, or hook-worthy detail you leave out is
+permanently unavailable to them. Any vague summary you write
+instead of a specific one directly produces vague, generic
+titles downstream.
+
 CAPTIONABLE DETAILS:
 
 These are specific evidence-grounded details a downstream
-caption writer can use.
+caption writer can use directly as a hook. Prioritize details
+that are concrete, unexpected, numeric, or emotionally charged
+over ones that merely restate the topic. Aim for at least
+3-5 entries when the evidence supports it — a copywriter needs
+raw material to choose from, not one polished summary.
 
 Good:
 "The speech says a dream remains possible while the visuals
@@ -224,6 +238,22 @@ by 'I believe it's yours too'."
 
 Bad:
 "The video contains motivational text."
+
+TARGET AUDIENCE SIGNALS:
+
+Name the audience as specifically as the evidence allows (e.g.
+"beginner home cooks on a budget", not "general viewers").
+Base this only on tone, vocabulary, technical depth, and
+subject matter actually present in the transcript or visuals —
+never guess demographics with no evidentiary basis.
+
+EMOTIONAL ARC:
+
+Describe a specific progression across the video, not a single
+static mood (e.g. "curiosity, then mounting tension, then
+relief" rather than just "emotional"). If the evidence only
+supports a single flat tone, say so plainly instead of
+inventing movement that isn't there.
 
 TECHNICAL LEVEL:
 
@@ -268,14 +298,14 @@ Return exactly this structure:
   "visible_text": [
     "exact important readable text"
   ],
-  "emotional_arc": "evidence-based emotional progression",
+  "emotional_arc": "specific progression, e.g. curiosity -> tension -> relief",
   "visual_style": "specific visual presentation style",
   "technical_level": "non-technical",
   "target_audience_signals": [
-    "content-supported audience signal"
+    "specific content-supported audience, not a generic label"
   ],
   "captionable_details": [
-    "specific evidence-grounded detail"
+    "specific, vivid, evidence-grounded detail a copywriter can use as a hook"
   ],
   "uncertainties": [
     "plausible interpretation not established"

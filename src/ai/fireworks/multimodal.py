@@ -129,6 +129,11 @@ Frame timestamps:
 
 Images are chronological.
 
+This description will later be handed to a copywriter who never
+sees the actual frames — a specific, concrete detail here becomes
+a usable hook downstream; a generic one ("a person talking") is
+lost information.
+
 Rules:
 - Describe only visible evidence.
 - Do not infer speech.
@@ -136,6 +141,13 @@ Rules:
 - Do not identify people unless visibly established.
 - Do not invent events between frames.
 - Preserve clearly readable text exactly.
+- Prefer a specific, concrete detail over a generic label whenever
+  the frames support one (e.g. a precise facial expression, a
+  striking prop, or on-screen text, not just "a person" or "a room").
+- If something visually notable happens — a sharp reaction, a
+  reveal, on-screen text with impact, a striking composition —
+  name it plainly in description or actions; do not flatten it into
+  a generic summary.
 - Keep every field concise.
 - Output JSON immediately.
 - Do not explain your reasoning.

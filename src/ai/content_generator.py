@@ -44,15 +44,16 @@ PLATFORM_SYNTAX
     ensure_ascii=False,
 )}
 
-Generate exactly:
+Generate the full candidate set now: 10 titles (one per strategic lane, in
+lane order 1-10), 10 descriptions (one per format, in format order 1-10),
+and 10 hashtag sets (one per strategy, in strategy order 1-10).
 
-- 10 titles
-- 10 descriptions
-- 10 hashtag sets
+Ground every candidate in the VIDEO_CONTEXT fields above — use
+key_moments, visible_text, key_entities, and target_audience_signals
+wherever they add real specificity, not just topic and core_message.
 
-Produce the final candidates directly.
-
-Return only the JSON object required by the schema.
+Return only the JSON object required by the schema. No markdown fences, no
+preamble, no explanation.
 """.strip()
 
 
