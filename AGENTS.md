@@ -11,7 +11,8 @@ A web app for short-form video creators: upload a 30s–2min video, and
 ClipContext analyzes its speech and visual content, cross-references
 current YouTube trends (and optionally a creator's own channel patterns),
 and generates 10 candidate titles, 10 descriptions, and 10 hashtag sets,
-independently ranked by an AI discriminator. Built for the lablab.ai AMD
+independently ranked by an AI discriminator, surfacing the top 5 of each
+pool to the creator. Built for the lablab.ai AMD
 Developer Hackathon (ACT II, Track 3) — two of the AI stages can run on an
 AMD GPU via ROCm/vLLM instead of Fireworks.
 

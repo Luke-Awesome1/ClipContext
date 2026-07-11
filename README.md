@@ -4,9 +4,10 @@
 
 **AI-powered video understanding and metadata generation for short-form creators.**
 
-Upload a clip. Get 10 titles, 10 descriptions, and 10 hashtag sets —
-independently generated, independently ranked, and grounded in what your
-video actually says and shows. Built for the lablab.ai AMD Developer
+Upload a clip. Get the top 5 titles, descriptions, and hashtag sets —
+picked by an AI discriminator from 10 independently generated candidates
+per category, grounded in what your video actually says and shows. Built
+for the lablab.ai AMD Developer
 Hackathon (ACT II, Track 3), with two AI stages running on a real AMD GPU
 via ROCm + vLLM.
 
@@ -23,8 +24,9 @@ via ROCm + vLLM.
 
 ClipContext takes a short creator video (roughly 30 seconds to 2 minutes)
 and turns it into platform-ready metadata: ten candidate titles, ten
-candidate descriptions, and ten candidate hashtag sets, each pool
-independently ranked by an AI discriminator — plus, optionally, a direct
+candidate descriptions, and ten candidate hashtag sets are generated per
+video, each pool independently ranked by an AI discriminator, with the
+top 5 of each pool surfaced to the creator — plus, optionally, a direct
 upload of the analyzed video to the creator's own YouTube channel with
 whichever candidates they picked.
 
@@ -62,7 +64,8 @@ built from the video's actual speech and visuals — trend data shapes
   creator-voice, and more) — see [docs/PROMPT_ENGINEERING.md](docs/PROMPT_ENGINEERING.md).
 - **Independent AI ranking.** A second model scores and ranks each
   candidate pool against the video's ground truth and real trend
-  benchmarks, with a stated reason per score.
+  benchmarks, with a stated reason per score — the top 5 per pool are
+  what reach the results page.
 - **Real AMD GPU inference.** Content generation and ranking can each
   independently route to an AMD ROCm/vLLM server instead of Fireworks, with
   automatic truthful fallback and a per-stage audit trail. See
@@ -122,10 +125,10 @@ topology, and repository structure — see
    AMD GPU.
 8. **Rank** each pool independently against the video's ground truth and
    trend benchmarks. Can also run on Fireworks or AMD GPU.
-9. **Results** — pick a title, description, and hashtag set (mix and
-   match freely — the pools are independent), optionally save the result
-   to a ClipContext account, optionally upload the video straight to
-   YouTube with your picks.
+9. **Results** — pick a title, description, and hashtag set from the top
+   5 AI-ranked candidates in each pool (mix and match freely — the pools
+   are independent), optionally save the result to a ClipContext account,
+   optionally upload the video straight to YouTube with your picks.
 
 Full stage-by-stage detail with real JSON shapes:
 **[docs/AI-Pipeline.md](docs/AI-Pipeline.md)**.

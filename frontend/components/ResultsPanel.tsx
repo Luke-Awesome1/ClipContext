@@ -64,7 +64,7 @@ function rankOf(rankings: RankedCandidate[], id: number): RankedCandidate | unde
   return rankings.find((entry) => entry.id === id);
 }
 
-const TOP_N_CANDIDATES = 10;
+const TOP_N_CANDIDATES = 5;
 
 function sortByRank<T extends { id: number }>(
   candidates: T[],

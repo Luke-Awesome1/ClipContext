@@ -27,7 +27,7 @@ const features = [
     icon: CheckCircle2,
     title: "Candidate Sets",
     description:
-      "Generates 10 titles, 10 descriptions, and 10 hashtag sets from verified context and platform syntax.",
+      "Generates 10 titles, 10 descriptions, and 10 hashtag sets from verified context and platform syntax, then ranks and surfaces the top 5 of each.",
   },
 ];
 
