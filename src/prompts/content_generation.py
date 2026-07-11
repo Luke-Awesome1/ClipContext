@@ -83,23 +83,36 @@ Hard constraints on every title:
 #### Descriptions (Generate exactly 10)
 - Purpose: Every candidate must be generated as public, viewer-facing copy ready to be pasted directly into a YouTube description box. Speak directly to the audience about the subject matter; never write structural commentary about the video file itself.
 
-You must generate exactly 10 distinct description candidates. To maximize audience variety, each ID must execute a completely different structural blueprint for real:
+Real short-form (Shorts/TikTok/Reels-style) video descriptions are short —
+almost always 1-3 sentences, sometimes with a tag-along hashtag or CTA
+line. Viewers do not tap "Show more" to read an essay. Every candidate
+below must read like something a real creator actually pasted into the
+description box, not a blog post. Unless PLATFORM_SYNTAX's
+syntax_blueprint shows *this specific audience* running noticeably longer
+descriptions than that, treat ~40 words as the practical ceiling for every
+lane except id 6, which may run slightly longer (up to ~60 words) — and
+even then, no candidate may span more than 2 short paragraphs.
+PLATFORM_SYNTAX's description structure/length observation is the actual
+target to hit, not a suggestion to exceed.
 
-- ID 1 [The Immediate Value-Drop]: Open instantly with a 1-2 sentence high-impact statement revealing the video's biggest realization. No intro, no filler—just pure momentum that forces a reader to click "Show more".
-- ID 2 [The Narrative Journey]: Write an immersive, multi-paragraph editorial that drops the reader directly into the story's peak conflict, builds out the real-world context, and maps the entire journey's resolution.
-- ID 3 [The Structured Value Breakdown]: Use clean, double line-breaks to separate three distinct paragraphs: the immediate problem/setup, the core transformation or lesson learned, and the global real-world impact. Do not use markdown bullet points or dashes.
-- ID 4 [The Interactive Community Hook]: Write in an engaging, viewer-first conversational tone. Close the description naturally by posing a compelling, topic-specific question that invites immediate viewer debate in the comments.
-- ID 5 [The Search-Optimized Opener]: Open the very first sentence with a high-volume, organic phrasing of the primary SEO search term. Build a naturally flowing, authoritative paragraph around it without ever disrupting readability.
-- ID 6 [The Deep Intel Blueprint]: Focus heavily on the exact technical specifications, key entities, and precise data points extracted from the video context. Engineered for viewers who demand precision over hype.
-- ID 7 [The Open Loop Suspense]: Establish a powerful psychological cliffhanger in the first sentence. Partially answer it in the second paragraph, leaving an unmissable incentive to watch the video through to the final frame.
-- ID 8 [The Casual Behind-The-Scenes]: Write in a raw, authentic, first-person creator voice. Use personal, high-energy adjectives that make it sound like a quick, passionate thought typed directly out of a personal notes app.
-- ID 9 [The Viewer Takeaway]: Lead directly with the exact personal benefit, skill, or paradigm shift the viewer walks away with after watching. Focus entirely on the immediate ROI of their attention.
-- ID 10 [The Brief Execution]: A single, highly concentrated, ultra-brief paragraph. Zero fluff, zero calls to action, no links placeholders—just total confidence expressed through raw brevity.
+You must generate exactly 10 distinct description candidates. To maximize audience variety, each ID must execute a completely different structural blueprint for real, while staying inside the length ceiling above:
+
+- ID 1 [The Immediate Value-Drop]: One high-impact sentence revealing the video's biggest realization. No intro, no filler — just the hook.
+- ID 2 [The Narrative Beat]: Two short sentences that drop the reader into a single vivid moment from the video and its payoff. A beat, not a chronicle — never more than 2 sentences.
+- ID 3 [The Structured Value Breakdown]: Three short lines, each on its own line break: the setup, the turn, the takeaway. One clause per line, not a paragraph per line. No markdown bullets or dashes.
+- ID 4 [The Interactive Community Hook]: One or two conversational sentences that end in a specific, topic-driven question inviting comments.
+- ID 5 [The Search-Optimized Opener]: One sentence that opens with a high-volume, organic phrasing of the primary SEO search term, stated plainly.
+- ID 6 [The Deep Intel Blueprint]: The one lane allowed to be denser — two to three sentences naming the exact technical specifics, key entities, or data points, for viewers who want precision over hype. Still no more than ~60 words total.
+- ID 7 [The Open Loop Suspense]: One sentence cliffhanger, followed by one sentence that half-answers it. Two sentences, full stop.
+- ID 8 [The Casual Behind-The-Scenes]: One or two sentences in a raw, first-person creator voice — reads like a quick note typed on a phone.
+- ID 9 [The Viewer Takeaway]: One sentence naming the exact benefit or takeaway the viewer walks away with.
+- ID 10 [The Brief Execution]: A single short sentence or fragment. The shortest candidate in the set — zero fluff, zero CTA.
 
 CRITICAL DISCOVERY STANDARDS:
-1. Above-the-Fold Forcing: The first 2 lines of every single ID must be high-impact, context-rich copy that creates immediate intrigue or summarizes the ultimate value of the video to drive CTR before a user clicks "Show More".
-2. Banned Phrases: NEVER use passive, descriptive phrases that analyze the media composition (e.g., BANNED: "This video shows...", "The clip begins with...", "At 0:15 the speaker transitions..."). 
+1. Above-the-Fold Forcing: Every ID's first sentence must be high-impact, context-rich copy that creates immediate intrigue or states the video's value — because for most of these lanes, the first sentence is the *entire* candidate.
+2. Banned Phrases: NEVER use passive, descriptive phrases that analyze the media composition (e.g., BANNED: "This video shows...", "The clip begins with...", "At 0:15 the speaker transitions...").
 3. Complete Independence: Ensure candidate descriptions have absolutely zero duplicate opening phrases, sentence structures, or wording choices across the 10 options.
+4. Length Discipline: If any candidate other than id 6 runs past ~40 words, or id 6 runs past ~60 words, cut it down before returning — a long description is a failed candidate, not a thorough one.
 
 ---
 
@@ -143,9 +156,10 @@ final output:
 - Does every candidate trace back to something in VIDEO_CONTEXT?
 - Where a lane didn't fit, did you follow its spirit instead of
   fabricating a detail to force it?
-- Is the minimalist description (id 10) actually shorter than the
-  long-form one (id 2)? If every description is roughly the same length,
-  the format instructions were ignored — fix it before returning.
+- Does every description read like a real short-form video description a
+  creator actually pasted in, not an essay? Is id 10 the shortest
+  candidate, and does only id 6 approach the ~60-word ceiling while every
+  other description stays near ~40 words or under?
 - Would a strategist genuinely struggle to pick a favorite from each pool,
   or does one candidate obviously dominate because the rest are weak?
 - Is the JSON valid — no trailing commas, no comments, no markdown

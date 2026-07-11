@@ -117,6 +117,33 @@ video details instead of generic topic-level statements.
 
 ---
 
+## 1b. Follow-up fix: description candidates were essay-length
+
+**Problem:** two of the 10 fixed description lanes (id 2 "Narrative
+Journey" and id 3 "Structured Value Breakdown") explicitly instructed
+"immersive, multi-paragraph editorial" and "three distinct paragraphs"
+output. Real short-form (Shorts/TikTok/Reels-style) video descriptions run
+1-3 sentences — the model was following those two lanes' instructions
+correctly, but the instructions themselves didn't match how real
+descriptions on this content type actually look, and had nothing to do
+with the length/structure signal already sitting in
+`PLATFORM_SYNTAX.syntax_blueprint` (extracted from real high-performing
+videos, see [§7–9](#7-9-trend--syntax-extraction-prompts) below) — the
+prompt never told the model to treat that signal as a length ceiling.
+
+**Fix** (`src/prompts/content_generation.py`): rewrote all 10 description
+lanes with an explicit word-count ceiling (~40 words for 9 of the 10
+lanes, ~60 words for the one lane — id 6 — allowed to run denser), an
+explicit instruction that `PLATFORM_SYNTAX`'s observed description
+length/structure is the target to hit rather than a floor to exceed, and
+replaced the two paragraph-format lanes with short, single/double-sentence
+equivalents that keep the same *strategic* intent (narrative beat,
+structured breakdown) without the essay length. Updated the pre-return
+self-check accordingly. No schema or pipeline change — prompt text only;
+all 112 tests still pass.
+
+---
+
 ## 3. Discriminator (ranking) prompt
 
 **Old prompt problems:**
