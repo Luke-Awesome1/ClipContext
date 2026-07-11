@@ -16,8 +16,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from firebase_admin import firestore
-
 from src.artifacts.schemas import (
     ArtifactSelection,
     ArtifactSummary,
@@ -112,6 +110,8 @@ class ArtifactRepository:
         )
 
     def list_artifacts(self, uid: str) -> list[ArtifactSummary]:
+        from firebase_admin import firestore
+
         try:
             query = self._collection(uid).order_by(
                 "created_at", direction=firestore.Query.DESCENDING

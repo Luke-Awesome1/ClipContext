@@ -18,19 +18,21 @@ Credential resolution order (first match wins):
    attached service account, no explicit credential file needed.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import threading
-from typing import Optional
-
-import firebase_admin
-from firebase_admin import credentials, firestore
+from typing import TYPE_CHECKING, Optional
 
 from src.config import (
     get_firebase_project_id,
     get_firebase_service_account_json,
     get_google_application_credentials,
 )
+
+if TYPE_CHECKING:
+    import firebase_admin
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,13 @@ _init_error: Optional[str] = None
 
 
 def _build_credentials():
+    # Deferred: firebase_admin (and its grpc/google-cloud-firestore
+    # dependencies) are only needed once an account/artifact endpoint is
+    # actually hit — importing at module load would add them to every
+    # process's boot-time memory footprint even for anonymous use. See
+    # docs/Deployment.md "the real memory constraint".
+    from firebase_admin import credentials
+
     service_account_json = get_firebase_service_account_json()
     if service_account_json:
         return credentials.Certificate(json.loads(service_account_json))
@@ -53,6 +62,8 @@ def _build_credentials():
 
 
 def get_firebase_app() -> Optional[firebase_admin.App]:
+    import firebase_admin
+
     global _app, _init_attempted, _init_error
 
     if _app is not None:
@@ -94,6 +105,8 @@ def get_firebase_init_error() -> Optional[str]:
 
 
 def get_firestore_client():
+    from firebase_admin import firestore
+
     app = get_firebase_app()
 
     if app is None:
@@ -104,6 +117,8 @@ def get_firestore_client():
 
 def reset_for_tests() -> None:
     """Test-only hook: clears cached init state between test cases."""
+    import firebase_admin
+
     global _app, _init_attempted, _init_error
 
     with _lock:

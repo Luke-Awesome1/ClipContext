@@ -15,8 +15,25 @@ import type {
   SavedArtifact,
 } from "@/types/artifact";
 
+const DEFAULT_API_BASE_URL = "http://localhost:8000";
+
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+
+/**
+ * True when NEXT_PUBLIC_API_BASE_URL was never set at build time (it's
+ * still the localhost fallback) while the app itself is running on a
+ * non-localhost origin — i.e. a deployment (Vercel or otherwise) where
+ * whoever deployed it forgot to set the env var, rather than a real local
+ * dev session. A network failure under this condition is a configuration
+ * gap, not a backend outage, and deserves a different error message.
+ */
+export function isLikelyUnconfiguredBackendUrl(): boolean {
+  if (API_BASE_URL !== DEFAULT_API_BASE_URL) return false;
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host !== "localhost" && host !== "127.0.0.1";
+}
 
 export class ApiError extends Error {
   status: number;

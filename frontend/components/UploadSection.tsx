@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronDown, FileVideo, Upload } from "lucide-react";
 import { useVideoSession } from "@/context/VideoSessionContext";
-import { createJob, ApiError } from "@/lib/api";
+import { createJob, ApiError, isLikelyUnconfiguredBackendUrl } from "@/lib/api";
 import SectionReveal from "@/components/ui/SectionReveal";
 
 const ACCEPTED = ["video/mp4", "video/quicktime", "video/webm"];
@@ -122,9 +122,11 @@ export default function UploadSection() {
       setJob(jobId, status);
       router.push("/process");
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
+      const message = err instanceof ApiError
+        ? err.message
+        : isLikelyUnconfiguredBackendUrl()
+          ? "This deployment isn't fully configured yet: NEXT_PUBLIC_API_BASE_URL " +
+            "was never set, so it's still pointing at localhost. See docs/Deployment.md."
           : "Could not reach the ClipContext backend. Is it running?";
       setError(message);
       setIsSubmitting(false);

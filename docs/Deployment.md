@@ -39,9 +39,11 @@ Firebase Authentication using the public web config.
 The repo is a monorepo: the Next.js app lives in `frontend/`, not the repo
 root. In the Vercel project's **Settings → General → Root Directory**, set
 it to `frontend`. Without this, Vercel will try to build from the repo root
-and fail (there's no `package.json` there for a Next.js app — the root
-`package.json` and `vercel.json` belong to the backend/repo tooling, not
-the frontend build).
+and fail (the root `package.json` there is just repo metadata, not a
+Next.js app — it has no `next` dependency or build script). There is no
+`vercel.json` in this repo — Root Directory plus Vercel's automatic
+Next.js framework detection is all that's needed; no custom rewrites or
+build overrides are required.
 
 Build command (from `frontend/package.json`, Vercel's Next.js preset picks
 this up automatically once Root Directory is set correctly):
@@ -138,27 +140,54 @@ registry and token store) is implemented.
 
 This is a known, documented limitation — not a resolved one. State it
 plainly: Railway's free/starter tier commonly provisions around **1GB of
-RAM** per service. This backend's dependency footprint is heavy, and nearly
-all of it is imported at FastAPI boot (`src/api/app.py` imports
-`src/api/routes.py`, `src/api/artifact_routes.py`, and
-`src/api/youtube_routes.py`, which transitively pull in the full pipeline):
+RAM** per service. This backend's dependency footprint is heavy:
 
-- `opencv-python` (video frame extraction)
-- `pandas` + `scikit-learn` (trend analysis)
-- `faster-whisper` / `ctranslate2` (local audio transcription)
-- `google-api-python-client`, `google-auth`, `google-auth-oauthlib` (YouTube)
+- `opencv-python` (video frame extraction) — needed early in every job, so
+  it's always resident by the time transcription runs regardless of import
+  timing.
+- `faster-whisper` / `ctranslate2` (local audio transcription) — the
+  stage that actually OOMs.
+- `pandas` + `scikit-learn` (trend analysis, runs *after* transcription)
+- `google-api-python-client`, `google-auth`, `google-auth-oauthlib`
+  (YouTube trends + OAuth/upload)
 - `firebase-admin` (Firestore/Authentication)
 
-Loading all of this at process start, and then running `faster-whisper`
-transcription on a real video, can push resident memory past a 1GB ceiling.
-When that happens, the Linux OOM killer sends a SIGKILL to the process —
-the container just stops, and the Railway logs show a bare **"Killed"**
-with no Python traceback, no stack trace, nothing to grep for. If you see
-that, it is almost certainly the OOM killer, not an application bug.
+`pandas`, `scikit-learn`, and `firebase-admin` are only needed **after**
+transcription (trend analysis) or **only if** a request ever hits an
+account/artifact endpoint — they are never needed for the upload → process
+→ results path up to and including transcription. `src/trends/trend_analyzer.py`,
+`src/trends/worldwide_analyzer.py`, `src/models/discriminator/discriminator.py`,
+`src/firebase/admin.py`, `src/firebase/auth.py`, and `src/artifacts/repository.py`
+import them lazily (inside the specific functions that use them, with
+`from __future__ import annotations` + `TYPE_CHECKING` guards so type
+hints still work) rather than at module load — so they are **not** part of
+every process's boot-time memory footprint. Measured locally: importing
+`src.api.app` uses ~138MB RSS with these deferred vs. ~242MB with them
+eager — roughly 100MB of headroom recovered before any job even starts.
+(`google-api-python-client`/`google-auth-oauthlib` were deliberately left
+eager — they're pulled in unavoidably by the YouTube OAuth/upload route
+registration at boot regardless of where else they're imported, so
+deferring them elsewhere wouldn't reduce actual memory usage.)
 
-Two real mitigations already exist in the code:
+Loading everything above at process start, and then running
+`faster-whisper` transcription on a real video, can still push resident
+memory past a 1GB ceiling — the deferred imports reduce the baseline, they
+don't eliminate the ceiling. When OOM happens, the Linux OOM killer sends
+a SIGKILL to the process — the container just stops, and the Railway logs
+show a bare **"Killed"** with no Python traceback, no stack trace, nothing
+to grep for, immediately followed by a fresh `Started server process`
+line as the container restarts. If you see that, it is almost certainly
+the OOM killer, not an application bug — and since the job registry is
+in-memory (see above), the restart also means any in-flight job's
+`GET /api/jobs/{id}` now 404s ("Job not found"), even though the crash
+itself happened during transcription, not because of anything
+job-registry-specific.
 
-1. **`WHISPER_MODEL_SIZE`** — controls which faster-whisper model
+Real mitigations that already exist in the code:
+
+1. **Deferred heavy imports** (above) — reduces the boot-time baseline
+   that stacks with a real transcription job's peak usage.
+2. **`WHISPER_MODEL_SIZE`** — controls which faster-whisper model
    `src/ai/transcriber.py` loads. The code's actual default (`DEFAULT_WHISPER_MODEL_SIZE`
    in `src/ai/transcriber.py`) is `"tiny"` (~39M params), the smallest
    available faster-whisper model — chosen specifically because `"small"`
@@ -169,10 +198,14 @@ Two real mitigations already exist in the code:
    guarantee. Raise `WHISPER_MODEL_SIZE` to `base`/`small`/`medium` only on
    a host with meaningfully more memory headroom, where transcript accuracy
    matters more than staying under a tight limit.
-2. **Run the backend locally for demo purposes.** `make backend` runs the
+3. **Run the backend locally for demo purposes.** `make backend` runs the
    same FastAPI app with `uvicorn --reload` against your laptop's own RAM,
    which is not the constraint a 1GB cloud plan is. For a hackathon demo or
    local development, this sidesteps the memory ceiling entirely.
+
+None of these raise the actual ceiling — they lower what's competing for
+space under it. On a video long/loud enough, OOM is still possible on a
+1GB plan.
 
 The real fix for production use is to **upgrade the Railway plan's memory
 allocation** so the process has real headroom above its boot-time import

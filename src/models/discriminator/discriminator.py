@@ -3,8 +3,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
-
 from src.ai.fireworks.client import MINMAX_ID
 from src.ai.providers.orchestrator import run_structured_stage
 from src.models.discriminator.schemas import DiscriminatorResult
@@ -39,6 +37,12 @@ def load_validation_payloads(
         context_data = json.load(file)
 
     try:
+        # Deferred: pandas is only needed here, well after transcription —
+        # importing it at module load would add it to every process's
+        # boot-time memory footprint regardless of whether this stage is
+        # ever reached. See docs/Deployment.md "the real memory constraint".
+        import pandas as pd
+
         trends_df = pd.read_json(
             trends_path
         )

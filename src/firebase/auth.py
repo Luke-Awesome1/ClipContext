@@ -8,8 +8,6 @@ Firebase ID token via the Admin SDK.
 from dataclasses import dataclass
 from typing import Optional
 
-from firebase_admin import auth as firebase_auth
-
 from src.firebase.admin import get_firebase_app
 
 
@@ -26,6 +24,8 @@ class AuthenticatedUser:
 
 
 def verify_id_token(id_token: str) -> AuthenticatedUser:
+    from firebase_admin import auth as firebase_auth
+
     app = get_firebase_app()
 
     if app is None:

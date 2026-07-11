@@ -1,18 +1,21 @@
+from __future__ import annotations
+
 import json
 import os
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import isodate
-import pandas as pd
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 
 # Import your unified Fireworks client utility and model targets
 from src.ai.fireworks.client import get_fireworks_client
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 load_dotenv()
 
@@ -206,7 +209,16 @@ def fetch_worldwide_trends(search_query: str, target_count: int = 30) -> list:
     return valid_clips
 
 
-def categorize_trends(clips_list: list) -> pd.DataFrame:
+def categorize_trends(clips_list: list):
+    # Deferred: pandas/scikit-learn are only needed here, well after
+    # transcription — importing them at module load would add them to
+    # every process's boot-time memory footprint regardless of whether
+    # this stage is ever reached. See docs/Deployment.md "the real memory
+    # constraint".
+    import pandas as pd
+    from sklearn.cluster import KMeans
+    from sklearn.preprocessing import StandardScaler
+
     dataframe = pd.DataFrame(clips_list)
 
     if dataframe.empty:
