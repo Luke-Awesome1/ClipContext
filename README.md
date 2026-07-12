@@ -30,6 +30,14 @@ top 5 of each pool surfaced to the creator — plus, optionally, a direct
 upload of the analyzed video to the creator's own YouTube channel with
 whichever candidates they picked.
 
+Every candidate is written in a style pulled from **real trending
+videos** — not a generic "make it punchy" instruction. ClipContext always
+analyzes **worldwide YouTube trends** in the video's own niche; if the
+creator gives their channel handle, it uses that **specific creator's own
+top-performing videos** instead. See
+[Trend analysis](#trend-analysis-worldwide--creator-specific) below for
+exactly how the two sources are used.
+
 ## The problem
 
 Creators spend real time after editing writing titles, descriptions, and
@@ -43,12 +51,12 @@ most frames in a short clip are temporally redundant, and a single
 
 A sparse, evidence-grounded pipeline: local, free preprocessing
 (validation, audio extraction, frame scanning, diversity selection) →
-one multimodal understanding call → trend analysis → independent
-generation and independent ranking of ten candidates per category. Every
-generated candidate has to be consistent with a canonical `VideoContext`
-built from the video's actual speech and visuals — trend data shapes
-*style*, never invents *facts*. Full write-up:
-[docs/Hackathon.md](docs/Hackathon.md).
+one multimodal understanding call → trend analysis (worldwide, plus the
+creator's own channel if a handle is given) → independent generation and
+independent ranking of ten candidates per category. Every generated
+candidate has to be consistent with a canonical `VideoContext` built from
+the video's actual speech and visuals — trend data shapes *style*, never
+invents *facts*. Full write-up: [docs/Hackathon.md](docs/Hackathon.md).
 
 ## Key features
 
@@ -62,6 +70,14 @@ built from the video's actual speech and visuals — trend data shapes
   pool is generated against a distinct strategy (question, bold claim,
   curiosity gap, number-led, story, technical, emotional, SEO-minimal,
   creator-voice, and more) — see [docs/PROMPT_ENGINEERING.md](docs/PROMPT_ENGINEERING.md).
+- **Two trend sources, not one generic vibe.** ClipContext always mines
+  **worldwide YouTube trends** in the video's own niche for a real,
+  data-derived style profile (typical title/description/hashtag
+  structure, SEO vocabulary, tone) — and, if a creator hands over their
+  channel, it swaps in that **specific creator's own top-performing
+  videos** instead, so the output sounds like *them*, not a generic
+  trending-video template. See
+  [Trend analysis](#trend-analysis-worldwide--creator-specific) below.
 - **Independent AI ranking.** A second model scores and ranks each
   candidate pool against the video's ground truth and real trend
   benchmarks, with a stated reason per score — the top 5 per pool are
@@ -118,8 +134,12 @@ topology, and repository structure — see
    what's visible in temporal windows aligned to the transcript.
 5. **Build `VideoContext`** — one canonical, evidence-grounded semantic
    summary of the video.
-6. **Trend analysis** — worldwide YouTube trends, plus creator-specific
-   trends if a channel handle was given, compiled into a style profile.
+6. **Trend analysis** — always pulls real high-performing videos in the
+   video's niche worldwide; if a creator handle was given, it instead
+   pulls that creator's own top videos. Either way, the result is
+   compiled into a style profile (typical structure, SEO vocabulary,
+   tone) — never facts, just style. See
+   [Trend analysis](#trend-analysis-worldwide--creator-specific) below.
 7. **Generate** 10 titles, 10 descriptions, 10 hashtag sets — grounded in
    `VideoContext`, styled by the trend profile. Can run on Fireworks or
    AMD GPU.
@@ -173,6 +193,40 @@ that the frontend uses to show (or honestly not show) an "AMD GPU
 inference" badge. Real hardware, a real measured model-selection
 benchmark, and the full networking setup:
 **[docs/AMD.md](docs/AMD.md)** · notebook setup log: **[amd/README.md](amd/README.md)**.
+
+## Trend analysis (worldwide + creator-specific)
+
+Every generation run is styled from exactly one trend-derived style
+profile, sourced from one of two places:
+
+- **Worldwide trends (always runs).** ClipContext derives a short YouTube
+  search query from the video's own content, pulls up to 30 real
+  high-performing videos in that niche (30-120s, via the YouTube Data
+  API), clusters them by performance, and asks a model to extract a
+  reusable **style profile** from the top cluster: typical
+  title/description/hashtag structure, real SEO vocabulary this audience
+  searches for, and the tone/adjectives these videos actually share.
+- **Creator-specific trends (only if a channel handle is given).** If the
+  creator provides their own YouTube handle, ClipContext instead pulls
+  *that channel's* own top-performing videos and extracts the same kind
+  of style profile from them — so the output matches how that specific
+  creator already writes, not a generic trending-video template. When a
+  handle is given, this **replaces** the worldwide profile for
+  generation; it isn't blended with it.
+- **Style, never facts.** Whichever profile is used, it only ever shapes
+  *how* a candidate is written — structure, vocabulary, tone. Every
+  candidate still has to be consistent with the canonical `VideoContext`
+  built from the video's actual transcript and visuals; trend data can
+  never introduce a claim, name, or detail the video doesn't support.
+- **Ranking still checks against the real world.** Independent of which
+  profile shaped generation, the ranking stage scores every candidate
+  against real worldwide performance benchmarks (views, like/comment
+  ratios, sample titles/tags from the top-performing cluster) — so a
+  candidate is never just "creatively ranked," it's ranked against how
+  similar real videos have actually performed.
+
+Full mechanics, real JSON shapes, and the exact model calls involved:
+[docs/AI-Pipeline.md](docs/AI-Pipeline.md) (Stages 8-9).
 
 ## Accounts & YouTube upload
 

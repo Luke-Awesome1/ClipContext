@@ -79,6 +79,14 @@ Two design points that shape a lot of the codebase:
 - **Independent candidate pools.** Titles, descriptions, and hashtag sets
   are generated and ranked independently. Candidate id 3 in titles has no
   relationship to id 3 in descriptions — a user can freely mix and match.
+- **Trend source is an override, not a blend.** Stage 8 (worldwide trend
+  analysis) always runs. Stage 9 (creator trend analysis) only runs if
+  `creator_handle` was given, and when it does, `run_pipeline()` uses the
+  creator's syntax profile for content generation *instead of* the
+  worldwide one — the two are never merged. The discriminator's ranking
+  stage always benchmarks against the worldwide trend cluster regardless
+  of which profile shaped generation. See [AI-Pipeline.md § Stage
+  8-9](AI-Pipeline.md) for the exact fetch/cluster/extract mechanics.
 
 ## AI provider routing (the AMD integration point)
 

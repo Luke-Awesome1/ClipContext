@@ -40,7 +40,12 @@ make frontend
 ```
 
 Open **http://localhost:3000**, upload a short video (30s–2min), and
-watch it process.
+watch it process. The upload form has an optional YouTube channel handle
+field — leave it blank and ClipContext styles the output from worldwide
+trending videos in the niche; fill it in and it instead styles the output
+from *that channel's own* top-performing videos. See
+[README.md § Trend analysis](README.md#trend-analysis-worldwide--creator-specific)
+for how that works.
 
 ## 5. What next
 

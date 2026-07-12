@@ -15,8 +15,9 @@ gives a creator nothing to choose between.
 ## Solution
 
 ClipContext is a sparse, evidence-grounded pipeline: local preprocessing
-(free) → multimodal understanding (one paid call) → trend analysis → 10
-independently-generated and independently-ranked candidates each for
+(free) → multimodal understanding (one paid call) → trend analysis
+(worldwide, swapped for the creator's own channel if a handle is given) →
+10 independently-generated and independently-ranked candidates each for
 titles, descriptions, and hashtags → optional direct YouTube upload with
 the creator's picks. Full pipeline detail: [AI-Pipeline.md](AI-Pipeline.md).
 
@@ -51,6 +52,17 @@ that can run on AMD GPU compute instead of Fireworks.
   scores and ranks each of the three candidate pools against the video's
   ground truth and real trend benchmarks — the product surfaces *why* a
   candidate ranked where it did, not just a black-box pick.
+- **Real trend data, from the right source.** Worldwide trend analysis
+  always runs — it queries the YouTube Data API for real high-performing
+  videos in the video's own niche, clusters them by performance, and
+  extracts a style profile (structure, SEO vocabulary, tone) from the
+  best-performing cluster. If the creator provides their own channel
+  handle, ClipContext instead pulls *that creator's* own top-performing
+  videos and extracts the same kind of profile from them — a straight
+  swap, not a blend — so a channel with an established voice gets styled
+  to match it instead of a generic trending template. Either way, the
+  discriminator still benchmarks every candidate against real worldwide
+  performance data. See [AI-Pipeline.md § Stage 8-9](AI-Pipeline.md).
 
 ## AMD usage
 
